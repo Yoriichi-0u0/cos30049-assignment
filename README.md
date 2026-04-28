@@ -166,7 +166,26 @@ cos30049-assignment-assets/
 └── sample-evidence/
 ```
 
+`cos30049-assignment-assets` is the downloadable Google Drive package name only.
+After downloading, place the local-only folders into the project root:
+
+```text
+/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/
+├── .venv/
+├── artifacts/
+│   └── clip_2class_touching_species.pt
+├── datasets/
+│   ├── touching-plants/
+│   └── touching-wildlife/
+├── models/
+│   └── hand_landmarker.task
+└── alerts/
+    └── ai/
+```
+
 Do not upload `.venv` to Google Drive. Other users should recreate the Python environment using `requirements.txt`.
+GitHub does not store `.venv/`, `artifacts/`, `datasets/`, `models/`, or `alerts/`
+because they are local-only folders ignored by `.gitignore`.
 
 ---
 
@@ -198,21 +217,23 @@ Keep the GitHub repository here:
 /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
 ```
 
-Keep large AI assets outside the repository:
+Keep downloaded AI assets inside the project working directory as local-only ignored folders:
 
 ```text
-/Users/chiayuenkai/cos30049-assignment-assets/
+/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/
 ├── .venv/
 ├── artifacts/
 │   └── clip_2class_touching_species.pt
 ├── datasets/
 │   ├── touching-plants/
 │   └── touching-wildlife/
-└── models/
-    └── hand_landmarker.task
+├── models/
+│   └── hand_landmarker.task
+└── alerts/
+    └── ai/
 ```
 
-Runtime AI evidence should be saved locally inside the repository, but ignored by Git:
+Runtime AI evidence should also be saved locally inside the repository, but ignored by Git:
 
 ```text
 /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai/
@@ -220,17 +241,20 @@ Runtime AI evidence should be saved locally inside the repository, but ignored b
 
 ### Windows
 
-Recommended external asset structure:
+Recommended local Windows project asset structure:
 
 ```text
-C:\COS30049 Assignment Assets\
+C:\COS30049 Assignment\
+├── .venv\
 ├── artifacts\
 │   └── clip_2class_touching_species.pt
 ├── datasets\
 │   ├── touching-plants\
 │   └── touching-wildlife\
-└── models\
-    └── hand_landmarker.task
+├── models\
+│   └── hand_landmarker.task
+└── alerts\
+    └── ai\
 ```
 
 Runtime AI evidence can be saved to:
@@ -509,10 +533,10 @@ Expected result:
 
 ## Python Environment Setup on macOS
 
-Create the Python environment inside the external asset folder:
+Create the Python environment inside the project working directory:
 
 ```bash
-cd /Users/chiayuenkai/cos30049-assignment-assets
+cd /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
 
 python3.12 -m venv .venv
 source .venv/bin/activate
@@ -549,19 +573,15 @@ Mac uses Apple Metal Performance Shaders (MPS), not NVIDIA CUDA.
 
 ## Running the AI Camera Monitor on macOS
 
-Activate the Python environment:
-
-```bash
-source /Users/chiayuenkai/cos30049-assignment-assets/.venv/bin/activate
-```
-
 Run the standalone AI camera monitor:
 
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
 
+source .venv/bin/activate
+
 python scripts/run_ai_camera_monitor.py \
-  --project-dir /Users/chiayuenkai/cos30049-assignment-assets \
+  --project-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment \
   --evidence-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai
 ```
 
@@ -612,13 +632,13 @@ The notebook includes:
 - realtime camera helper logic
 - backend incident POST helper
 
-The notebook expects these external files:
+The notebook expects these local-only files under the project root:
 
 ```text
-artifacts/clip_2class_touching_species.pt
-models/hand_landmarker.task
-datasets/touching-plants/
-datasets/touching-wildlife/
+/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/artifacts/clip_2class_touching_species.pt
+/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/models/hand_landmarker.task
+/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/datasets/touching-plants/
+/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/datasets/touching-wildlife/
 ```
 
 ---
@@ -638,10 +658,11 @@ The AI training pipeline performs:
 Expected trained model:
 
 ```text
-artifacts/clip_2class_touching_species.pt
+/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/artifacts/clip_2class_touching_species.pt
 ```
 
-The model file is not included in GitHub. Download it from the external assets folder.
+The model file is not included in GitHub. Download it from the Google Drive asset
+package and place it under the project root `artifacts/` folder.
 
 ---
 
@@ -753,7 +774,7 @@ models/
 Before pushing, run:
 
 ```bash
-git ls-files | grep -E "node_modules|\.venv|datasets|Datasets|artifacts|Artifacts|alerts|Alerts|models|Models|\.pt|\.pth|dist"
+git ls-files | grep -E "node_modules|\.venv|datasets|artifacts|alerts|models|\.pt|\.pth|dist"
 ```
 
 Expected result:
@@ -768,16 +789,12 @@ Remove tracked local assets without deleting them from your Mac:
 
 ```bash
 git rm -r --cached alerts 2>/dev/null
-git rm -r --cached Alerts 2>/dev/null
 
 git rm -r --cached models 2>/dev/null
-git rm -r --cached Models 2>/dev/null
 
 git rm -r --cached artifacts 2>/dev/null
-git rm -r --cached Artifacts 2>/dev/null
 
 git rm -r --cached datasets 2>/dev/null
-git rm -r --cached Datasets 2>/dev/null
 
 git rm -r --cached user_page/node_modules 2>/dev/null
 git rm -r --cached admin_page/node_modules 2>/dev/null
@@ -834,11 +851,8 @@ dist/
 
 # AI datasets, models, and trained artifacts
 datasets/
-Datasets/
 artifacts/
-Artifacts/
 models/
-Models/
 *.pt
 *.pth
 *.onnx
@@ -849,7 +863,6 @@ Models/
 
 # Runtime alerts and evidence
 alerts/
-Alerts/
 user_login/server/data/incidents.runtime.json
 
 # Logs
@@ -865,16 +878,40 @@ yarn-error.log*
 
 ### Port 4000 already in use
 
+This happens when another backend server is already running, usually from a previous
+`cd user_login/server && npm start` or `npm run dev` session.
+
+The root launcher checks `http://localhost:4000/api/health` before starting the
+backend. If that health endpoint already responds, it reuses the running backend
+and prints:
+
+```text
+server already running on http://localhost:4000, skipping backend start
+```
+
 Check which process is using port 4000:
 
 ```bash
 lsof -nP -iTCP:4000 -sTCP:LISTEN
 ```
 
-Kill the process:
+Kill the process by PID:
 
 ```bash
 kill -9 <PID>
+```
+
+Or kill the listening process directly:
+
+```bash
+lsof -tiTCP:4000 -sTCP:LISTEN | xargs kill -9
+```
+
+If port 4000 is occupied by something that is not the backend API, the launcher
+will continue starting the other review services and print:
+
+```text
+Port 4000 is occupied by another process. Run: lsof -nP -iTCP:4000 -sTCP:LISTEN
 ```
 
 Then restart:
@@ -892,14 +929,20 @@ Check:
 - camera index
 - macOS Privacy and Security settings
 
-For iPhone Continuity Camera, try a different camera index if supported by the script.
+MacBook built-in camera works as the default camera. iPhone Continuity Camera
+support is environment-dependent. It has worked when the MacBook was connected
+to the iPhone hotspot, and it has also been tested working when both MacBook and
+iPhone were connected to Yoriichi's Router network. OpenCV camera index
+switching is still not guaranteed to manually select the iPhone camera. Keep
+`--camera-index` for normal webcams, but do not claim it always selects iPhone
+Continuity Camera.
 
 ### Model file not found
 
 Make sure this file exists:
 
 ```text
-/Users/chiayuenkai/cos30049-assignment-assets/artifacts/clip_2class_touching_species.pt
+/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/artifacts/clip_2class_touching_species.pt
 ```
 
 ### Hand model not found
@@ -907,7 +950,7 @@ Make sure this file exists:
 Make sure this file exists:
 
 ```text
-/Users/chiayuenkai/cos30049-assignment-assets/models/hand_landmarker.task
+/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/models/hand_landmarker.task
 ```
 
 ### AI evidence image does not show in admin
@@ -945,8 +988,12 @@ For the current prototype, MySQL is not required for live incident sync. The bac
 Use the standalone script:
 
 ```bash
+cd /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment
+
+source .venv/bin/activate
+
 python scripts/run_ai_camera_monitor.py \
-  --project-dir /Users/chiayuenkai/cos30049-assignment-assets \
+  --project-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment \
   --evidence-dir /Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai
 ```
 
