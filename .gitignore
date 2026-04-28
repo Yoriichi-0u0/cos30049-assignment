@@ -216,3 +216,57 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# macOS
+.DS_Store
+
+# Python environment and cache
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+**/dist/
+.vite/
+.expo/
+.expo-shared/
+
+# Local environment files
+.env
+.env.local
+.env.*
+!.env.example
+
+# AI datasets, models, and trained artifacts
+datasets/
+Datasets/
+artifacts/
+Artifacts/
+models/
+Models/
+*.pt
+*.pth
+*.onnx
+*.h5
+*.keras
+*.pkl
+*.joblib
+
+# Runtime alerts and evidence
+alerts/
+Alerts/
+user_login/server/data/incidents.runtime.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
