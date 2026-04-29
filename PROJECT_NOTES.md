@@ -23,6 +23,34 @@ This copy is prepared for lecturer demonstration. Do not use Git commands in thi
 
 The training platform is seeded frontend demo data. The backend and MySQL integration are scoped to AI/IoT monitoring incidents only.
 
+## Citrus Energetic UI System
+
+Palette:
+
+- Deep forest green: `#0b3b28` and `#175f3e` for official navigation, admin command surfaces, ranger response headers, and trustworthy system areas.
+- Warm citrus orange: `#ff7a1a` for primary actions, active filters, review highlights, and demo call-to-action controls.
+- Soft yellow/cream: `#fff8e6`, `#fff9e9`, and `#ffd23f` for warm page backgrounds, learning cards, and approachable guide-facing surfaces.
+- Lime green: `#a8e64a` and `#8ac926` for healthy/live/success state, progress indicators, and completion badges.
+- Warm charcoal: `#1e2a22` for high-contrast dashboard text and command-center structure.
+
+Component rules:
+
+- Logo usage: use the shared generated Citrus logo as a small app mark in the Hub, User/Park Guide portal, Admin shell, Park Ranger route, and Mobile preview. Keep the optimized WebP/PNG copies below 150 KB and do not use the original generated PNG directly.
+- Cards use rounded corners, light borders, cream/white surfaces, and soft green/citrus shadows.
+- Buttons use pill or rounded shapes, strong font weight, citrus gradients for primary actions, and forest/cream contrast for secondary actions.
+- Status badges use compact rounded pills with source/status-specific colors; live/healthy states should use lime/green, active review states use citrus/yellow, and risk states use warm red/orange.
+- Tables use light cream rows, readable dark text, uppercase headers, clear hover/selected states, and no low-contrast dark body rows.
+- Evidence images use rounded frames, stable aspect ratios, `object-fit: cover`, and browser-safe URLs such as `/evidence/ai/<filename>`.
+- Page spacing uses dashboard-like grids, 16-28px gaps, and wide cards only where the content needs scanning.
+
+Role identity:
+
+- User/Park Guide: warm citrus learning portal with friendly cream cards, orange actions, and progress-focused visuals.
+- Admin: command center with warm charcoal/forest structure, citrus cards, monitoring summaries, and clear review hierarchy.
+- Park Ranger: field response console with forest green headers, urgent incident emphasis, and citrus response buttons.
+- Hub: neutral launcher using the same palette, rainforest hero, service health badges, and direct links.
+- Mobile: simplified version of the Park Guide theme with cream surfaces, forest text, and citrus actions.
+
 ## Expected Local Structure
 
 ```text
@@ -108,3 +136,7 @@ Absolute local paths such as `/Users/...` should not be returned to the frontend
 - Polished Park Ranger Console as a response-only field console with urgent incidents, field notes, status actions, and role boundaries.
 - Added a demo-safe IoT test publisher fallback: MQTT remains the first path, but public-broker timeouts can fall back to the local incidents API with the same IOT_SENSOR payload.
 - Updated documentation for memory mode, MySQL mode, AI camera runtime, IoT simulation, cybersecurity notes, and final screenshot evidence.
+- Completed a Citrus Energetic UI consistency pass across the hub, Admin dashboard, Admin Incident Detection, Park Ranger Console, User Portal, and Mobile preview.
+- Generated and applied a shared Citrus logo mark across the hub, login surfaces, User Portal, Admin sidebar, Park Ranger route through the Admin shell, and Mobile preview. Optimized copies are 17 KB WebP for browser UI and 80 KB PNG for favicon/mobile usage.
+- Added one generated Sarawak rainforest hero image at `images/citrus-rainforest-hero.webp` and optimized it to 136 KB for the hub background.
+- Optimized frontend training images into WebP files under `user_page/public/training/`; each optimized training image is below 100 KB and the large unused PNG originals were removed from the public frontend folder.

@@ -39,6 +39,11 @@ User app: http://localhost:5175/user
 Mobile preview: http://localhost:8081
 ```
 
+Visual identity check:
+
+- Confirm the shared Citrus logo appears on the Review Hub, User Portal sidebar, Admin sidebar, Park Ranger route through the Admin shell, and Mobile preview header.
+- Keep the original generated logo source out of the app runtime; use the optimized WebP/PNG copies already placed in each app.
+
 ## Terminal 2: API And MySQL Checks
 
 API health:
@@ -174,6 +179,25 @@ http://localhost:4000/api/incidents
 http://localhost:4000/api/incidents/summary
 ```
 
+## Visual Consistency Checks
+
+The demo should now read as one Citrus Energetic system:
+
+- Hub: rainforest launcher, forest/citrus hero, rounded service cards, live status pills.
+- User/Park Guide: warm citrus learning portal, cream cards, orange actions, lime progress states.
+- Admin Dashboard: command-center view with charcoal/forest structure and citrus monitoring cards.
+- Admin Incident Detection: consistent filters, table badges, evidence frame, metadata cards, and status actions.
+- Park Ranger Console: forest field-response identity, urgent queue, evidence panel, and citrus response actions.
+- Mobile Preview: simplified Park Guide palette with cream surfaces and citrus actions.
+
+Image rule for report/demo assets:
+
+- Hero images should stay below 500 KB.
+- Card thumbnails should stay below 150 KB.
+- Do not optimize or delete `alerts/ai` runtime evidence.
+- Current generated hub hero is `images/citrus-rainforest-hero.webp` at 136 KB.
+- Current user training WebP images are below 100 KB each.
+
 ## Manual Demo Order
 
 1. Open `http://localhost:5173` and show the root hub cards and service links.
@@ -189,6 +213,7 @@ http://localhost:4000/api/incidents/summary
 11. Run AI camera or IoT simulation.
 12. Refresh Admin and Ranger pages and show the same backend incident data.
 13. Patch status from the UI or curl and show persistence in API/MySQL.
+14. Capture final screenshots after confirming the Citrus Energetic theme is consistent across Hub, User, Admin, Ranger, and Mobile.
 
 ## Screenshot Checklist
 

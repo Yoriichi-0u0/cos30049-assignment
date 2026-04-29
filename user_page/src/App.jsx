@@ -9,6 +9,7 @@ import {
 } from './data/trainingPlatform'
 
 const STORAGE_KEY = 'sfc_citrus_training_demo'
+const brandLogo = `${import.meta.env.BASE_URL}sfc-citrus-logo.webp`
 
 const cloneSeedUsers = () => JSON.parse(JSON.stringify(demoUsers))
 
@@ -375,7 +376,9 @@ function App() {
     <div className="app-shell">
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="brand-block">
-          <div className="brand-mark">SFC</div>
+          <div className="brand-mark">
+            <img src={brandLogo} alt="SFC demo logo" />
+          </div>
           <div>
             <strong>Guide Center</strong>
             <span>Digital Training</span>

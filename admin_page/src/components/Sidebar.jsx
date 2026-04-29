@@ -4,6 +4,7 @@ import { NavLink } from "react-router-dom";
 import { useSidebarState } from "react-admin";
 
 const SIDEBAR_WIDTH = 312;
+const logoSrc = `${import.meta.env.BASE_URL}sfc-citrus-logo.webp`;
 
 const Sidebar = () => {
   const [open] = useSidebarState();
@@ -64,7 +65,12 @@ const Sidebar = () => {
               flexShrink: 0,
             }}
           >
-            SFC
+            <Box
+              component="img"
+              className="admin-sidebar-logo"
+              src={logoSrc}
+              alt="SFC demo logo"
+            />
           </Box>
 
           <Typography

@@ -24,6 +24,9 @@ Do not run Git commands in this duplicated demo copy.
 | MySQL incident persistence | Done / Demo-ready | Apply migration, run `INCIDENT_STORAGE=mysql`, query `monitoring_incidents`. |
 | Cybersecurity and data protection | Partially done / Demo-ready notes | Show `.env.example`, role boundaries, browser-safe evidence URLs, validation behavior, and production hardening recommendations. |
 | Evidence/report screenshots | Done / Demo-ready | Use README and WORKFLOW screenshot checklist. |
+| Citrus Energetic UI consistency | Done / Demo-ready | Hub, User Portal, Admin Dashboard, Admin Detection, Park Ranger, and Mobile preview now share the same forest/citrus/cream/lime visual system. |
+| Shared demo logo | Done / Demo-ready | Generated logo mark is optimized and applied to the Hub, login surfaces, User Portal, Admin shell, Park Ranger route, and Mobile preview. |
+| Frontend image optimization | Done / Demo-ready | Generated hub hero is 136 KB; training images are WebP files below 100 KB each; `alerts/ai` evidence remains untouched. |
 
 ## Before Lecturer Demo
 
@@ -40,6 +43,8 @@ Do not run Git commands in this duplicated demo copy.
 - [ ] Run backend API checks in memory mode.
 - [ ] If showing persistence, create `cos30049_assignment`, apply migration, and run MySQL mode.
 - [ ] Capture screenshots listed in README/WORKFLOW.
+- [ ] Confirm the shared Citrus logo is visible in the hub, User Portal sidebar, Admin sidebar, Park Ranger page through Admin, and Mobile preview.
+- [ ] Manually review the UI surfaces for final screenshot framing after starting `npm run dev`.
 
 ## Intentionally Deferred
 

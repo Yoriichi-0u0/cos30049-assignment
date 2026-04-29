@@ -18,6 +18,26 @@ This project demonstrates the three Project Scope areas:
 
 The Park Guide training platform remains frontend-seeded for the demo. MySQL persistence is only implemented for AI/IoT monitoring incidents.
 
+## UI And Asset Status
+
+The demo uses a shared Citrus Energetic visual system:
+
+- Deep forest green for official/primary areas.
+- Warm citrus orange for actions and highlights.
+- Soft yellow/cream backgrounds for warmth.
+- Lime green for success/live/healthy states.
+- Warm charcoal for dashboard contrast and readable text.
+
+This consistency pass updated the Review Hub, Admin dashboard, Admin Incident Detection, Park Ranger Console, User Portal, and Mobile preview without changing AI model logic, backend incident API behavior, or MySQL schema.
+
+Image optimization status:
+
+- Shared generated logo: `images/sfc-citrus-logo.webp`, 17 KB, with app-local copies for Hub, User, Admin, and Mobile surfaces.
+- New generated hero: `images/citrus-rainforest-hero.webp`, 136 KB.
+- User training images are now WebP files in `user_page/public/training/`.
+- Optimized training images are below 100 KB each.
+- `alerts/ai` evidence images were not optimized or deleted because they are runtime evidence.
+
 ## Local Structure
 
 ```text
@@ -256,3 +276,5 @@ Capture:
 8. `/api/health`, `/api/incidents`, and `/api/incidents/summary`.
 9. `alerts/ai` folder showing JPG/JSON evidence.
 10. MySQL query showing monitoring incidents, if running MySQL mode.
+11. Citrus Energetic visual consistency across Hub, User, Admin, Ranger, and Mobile surfaces.
+12. Shared logo appears in the Review Hub, Park Guide portal, Admin shell, Park Ranger route through the Admin shell, and Mobile preview.

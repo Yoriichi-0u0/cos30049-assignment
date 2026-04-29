@@ -25,7 +25,7 @@ const Login = () => {
   return (
     <div className="login-container">
       <img
-        src="/fd87f0d6-56d3-49eb-b3e8-5a80cf4fc818.png"
+        src="/images/sfc-citrus-logo.webp"
         alt="Digital Park Portal Logo"
         className="logo"
       />
