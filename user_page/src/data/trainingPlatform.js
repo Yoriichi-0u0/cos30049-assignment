@@ -667,6 +667,6 @@ export const supportTopics = [
   },
   {
     title: 'Where does this demo data come from?',
-    body: 'This pass uses front-end seeded data only. Express and MySQL integration is intentionally deferred.',
+    body: 'The Park Guide training portal uses front-end seeded demo data. AI/IoT monitoring incidents can run through the backend in memory or MySQL mode.',
   },
 ]

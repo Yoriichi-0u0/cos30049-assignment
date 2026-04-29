@@ -29,7 +29,8 @@ const sourceLabel = {
 };
 
 const resolveEvidenceImageUrl = (evidenceImage) => {
-  if (!evidenceImage) return null;
+  if (!evidenceImage || typeof evidenceImage !== "string") return null;
+  if (evidenceImage.startsWith("/Users/")) return null;
   if (evidenceImage.startsWith("http://") || evidenceImage.startsWith("https://")) {
     return evidenceImage;
   }
@@ -48,6 +49,18 @@ const formatDateTime = (timestamp) => {
     timeStyle: "short",
   });
 };
+
+const formatPercent = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? `${Math.round(number * 100)}%` : "Unavailable";
+};
+
+const formatDecimal = (value, digits = 2) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(digits) : "Unavailable";
+};
+
+const statusClassName = (status = "") => String(status).toLowerCase().replace(/\s+/g, "-");
 
 const getFilteredIncidents = (incidents, activeFilter) => {
   if (activeFilter === "all") return incidents;
@@ -68,6 +81,9 @@ const AIDetection = () => {
   const [selectedIncidentId, setSelectedIncidentId] = useState(seededIncidents[0]?.id);
   const [backendOnline, setBackendOnline] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [savingIncidentId, setSavingIncidentId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +101,7 @@ const AIDetection = () => {
 
         setBackendOnline(true);
         setApiError("");
+        setLastUpdated(new Date());
         setIncidents(liveIncidents);
         setSelectedIncidentId((currentId) =>
           liveIncidents.some((incident) => incident.id === currentId)
@@ -101,6 +118,8 @@ const AIDetection = () => {
             ? currentId
             : seededIncidents[0]?.id || null
         );
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     };
 
@@ -118,6 +137,17 @@ const AIDetection = () => {
     () => getFilteredIncidents(incidents, activeFilter),
     [incidents, activeFilter]
   );
+  const filterCounts = useMemo(
+    () =>
+      INCIDENT_FILTERS.reduce(
+        (counts, filter) => ({
+          ...counts,
+          [filter.id]: getFilteredIncidents(incidents, filter.id).length,
+        }),
+        {}
+      ),
+    [incidents]
+  );
   const selectedIncident = incidents.find((incident) => incident.id === selectedIncidentId);
 
   const updateIncidentStatus = async (incidentId, status) => {
@@ -133,6 +163,8 @@ const AIDetection = () => {
       applyLocalStatus();
       return;
     }
+
+    setSavingIncidentId(incidentId);
 
     try {
       const response = await fetch(
@@ -164,30 +196,27 @@ const AIDetection = () => {
       setBackendOnline(false);
       setApiError(error.message);
       applyLocalStatus();
+    } finally {
+      setSavingIncidentId(null);
     }
   };
 
   const statusMode = backendOnline ? "Live backend" : "Seeded fallback";
-
-  const updateSelectedIncident = (incidentId) => {
-    setSelectedIncidentId(incidentId);
-  };
-
   const statusCards = [
-    { label: "Total Incidents", value: summary.total, detail: backendOnline ? "Live in-memory incidents" : "Seeded fallback incidents" },
+    { label: "Total", value: summary.total, detail: backendOnline ? "Backend incidents" : "Demo incidents" },
     { label: "AI Camera", value: summary.ai, detail: "TouchingPlants / TouchingWildlife" },
     { label: "IoT Sensor", value: summary.iot, detail: "ObjectCloseToPlant readings" },
-    { label: "New", value: summary.new, detail: "Needs admin review" },
-    { label: "Reviewed", value: summary.reviewed, detail: "Checked by admin" },
-    { label: "False Alarm", value: summary.falseAlarm, detail: "Kept for audit trail" },
+    { label: "New", value: summary.new, detail: "Needs review" },
+    { label: "In Review", value: summary.inReview, detail: "Being investigated" },
+    { label: "Resolved", value: summary.resolved, detail: "Closed response" },
+    { label: "False Alarm", value: summary.falseAlarm, detail: "Retained for audit" },
   ];
 
   const visibleCountLabel = `${filteredIncidents.length} visible`;
-
   const emptyState = filteredIncidents.length === 0;
-
+  const lastUpdatedLabel = lastUpdated ? formatDateTime(lastUpdated.toISOString()) : "Not connected yet";
   const connectionDetail = backendOnline
-    ? "Polling live runtime incidents every 2.5 seconds"
+    ? `Polling every 2.5 seconds. Last update: ${lastUpdatedLabel}`
     : `Backend offline, showing seeded fallback${apiError ? ` (${apiError})` : ""}`;
 
   return (
@@ -196,11 +225,11 @@ const AIDetection = () => {
         <Box>
           <Typography className="incident-eyebrow">AI / IoT Monitoring</Typography>
           <Typography component="h1" className="incident-title">
-            Admin Incident Dashboard
+            Admin Incident Detection
           </Typography>
           <Typography className="incident-subtitle">
-            Live incident review for real-time AI camera alerts and IoT proximity sensor alerts.
-            Express/MySQL is intentionally not connected yet.
+            Command-center review for AI camera alerts, IoT proximity alerts, evidence metadata,
+            and incident status decisions.
           </Typography>
         </Box>
         <Box className="incident-contract-card">
@@ -208,6 +237,15 @@ const AIDetection = () => {
           <strong>AI_CAMERA + IOT_SENSOR</strong>
           <small>{connectionDetail}</small>
         </Box>
+      </Box>
+
+      <Box className={`incident-state-banner ${backendOnline ? "online" : "fallback"}`}>
+        <strong>{backendOnline ? "Backend incident API connected" : "Using seeded fallback incidents"}</strong>
+        <span>
+          {backendOnline
+            ? "Live memory/MySQL incident data is being rendered from /api/incidents."
+            : "Start the backend to switch this dashboard from seeded evidence to live runtime incidents."}
+        </span>
       </Box>
 
       <Box className="incident-stat-grid">
@@ -229,6 +267,7 @@ const AIDetection = () => {
             type="button"
           >
             {filter.label}
+            <span>{filterCounts[filter.id] ?? 0}</span>
           </Button>
         ))}
       </Box>
@@ -240,13 +279,15 @@ const AIDetection = () => {
               <Typography className="incident-eyebrow">Review queue</Typography>
               <Typography component="h2">Incident records</Typography>
             </Box>
-            <Typography>{visibleCountLabel}</Typography>
+            <Typography>{isLoading ? "Loading..." : visibleCountLabel}</Typography>
           </Box>
 
           {emptyState ? (
             <Box className="incident-empty-state">
-              <Typography component="h3">No live incidents yet</Typography>
-              <Typography>Post an AI incident or publish an IoT MQTT payload to populate the queue.</Typography>
+              <Typography component="h3">No matching incidents</Typography>
+              <Typography>
+                Change the filter, post an AI incident, or publish an IoT MQTT payload to populate this queue.
+              </Typography>
             </Box>
           ) : (
             <TableContainer>
@@ -269,6 +310,8 @@ const AIDetection = () => {
                       key={incident.id}
                       hover
                       selected={selectedIncidentId === incident.id}
+                      className={`incident-table-row ${selectedIncidentId === incident.id ? "is-selected" : ""}`}
+                      onClick={() => setSelectedIncidentId(incident.id)}
                     >
                       <TableCell className="incident-id-cell">{incident.id}</TableCell>
                       <TableCell>
@@ -285,14 +328,17 @@ const AIDetection = () => {
                       <TableCell>{incident.location}</TableCell>
                       <TableCell>{formatDateTime(incident.timestamp)}</TableCell>
                       <TableCell>
-                        <span className={`status-chip ${incident.status.toLowerCase().replace(" ", "-")}`}>
+                        <span className={`status-chip ${statusClassName(incident.status)}`}>
                           {incident.status}
                         </span>
                       </TableCell>
                       <TableCell align="right">
                         <Button
                           className="incident-detail-button"
-                          onClick={() => updateSelectedIncident(incident.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedIncidentId(incident.id);
+                          }}
                         >
                           Details
                         </Button>
@@ -307,15 +353,15 @@ const AIDetection = () => {
 
         <IncidentDetailPanel
           incident={selectedIncident}
+          savingIncidentId={savingIncidentId}
           onStatusChange={updateIncidentStatus}
         />
       </Box>
-
     </Box>
   );
 };
 
-const IncidentDetailPanel = ({ incident, onStatusChange }) => {
+const IncidentDetailPanel = ({ incident, savingIncidentId, onStatusChange }) => {
   if (!incident) {
     return (
       <Paper className="incident-detail-panel">
@@ -327,16 +373,24 @@ const IncidentDetailPanel = ({ incident, onStatusChange }) => {
 
   const probabilities = incident.ai?.probabilities || {};
   const evidenceImageUrl = resolveEvidenceImageUrl(incident.evidenceImage);
+  const bbox = Array.isArray(incident.ai?.bbox) ? incident.ai.bbox : [];
+  const isSaving = savingIncidentId === incident.id;
 
   return (
     <Paper className="incident-detail-panel">
       <Typography className="incident-eyebrow">{sourceLabel[incident.source]}</Typography>
       <Typography component="h2">{incident.eventType}</Typography>
       <Typography className="incident-detail-id">{incident.id}</Typography>
+      <Typography className="incident-detail-kicker">
+        {incident.source === "AI_CAMERA"
+          ? "Evidence review, classification confidence, and bounding-box metadata"
+          : "Sensor-only proximity alert with MQTT metadata"}
+      </Typography>
 
       {evidenceImageUrl ? (
         <Box className="incident-evidence-frame">
           <img src={evidenceImageUrl} alt={`${incident.eventType} evidence`} />
+          <span className="incident-evidence-caption">Browser-safe evidence URL rendered through the app/backend.</span>
         </Box>
       ) : (
         <Box className="incident-no-image">No image evidence for sensor-only alert</Box>
@@ -353,12 +407,12 @@ const IncidentDetailPanel = ({ incident, onStatusChange }) => {
         <Box className="incident-metadata-card">
           <Typography component="h3">AI evidence metadata</Typography>
           <DetailItem label="Predicted Class" value={incident.ai.predictedClass || "Unknown"} />
-          <DetailItem label="Confidence" value={`${Math.round(incident.ai.confidence * 100)}%`} />
-          <DetailItem label="Margin" value={incident.ai.margin.toFixed(2)} />
-          <DetailItem label="BBox" value={`[${incident.ai.bbox.join(", ")}]`} />
+          <DetailItem label="Confidence" value={formatPercent(incident.ai.confidence)} />
+          <DetailItem label="Margin" value={formatDecimal(incident.ai.margin)} />
+          <DetailItem label="BBox" value={bbox.length ? `[${bbox.join(", ")}]` : "Unavailable"} />
           <DetailItem
             label="Probabilities"
-            value={`Plants ${(probabilities.TouchingPlants * 100).toFixed(0)}% / Wildlife ${(probabilities.TouchingWildlife * 100).toFixed(0)}%`}
+            value={`Plants ${formatPercent(probabilities.TouchingPlants)} / Wildlife ${formatPercent(probabilities.TouchingWildlife)}`}
           />
         </Box>
       )}
@@ -370,19 +424,22 @@ const IncidentDetailPanel = ({ incident, onStatusChange }) => {
           <DetailItem label="Distance" value={`${incident.iot.distanceCm} cm`} />
           <DetailItem label="Threshold" value={`${incident.iot.thresholdCm} cm`} />
           <DetailItem label="MQTT Topic" value={incident.iot.topic} />
+          <DetailItem label="Location" value={incident.location} />
         </Box>
       )}
 
       <Box className="incident-notes">
-        <Typography component="h3">Notes</Typography>
-        <Typography>{incident.notes}</Typography>
+        <Typography component="h3">Review notes</Typography>
+        <Typography>{incident.notes || "No notes recorded for this incident."}</Typography>
       </Box>
 
       <Box className="incident-status-actions">
+        <Typography component="h3">Update incident status</Typography>
         {INCIDENT_STATUSES.map((status) => (
           <Button
             key={status}
             className={incident.status === status ? "active" : ""}
+            disabled={isSaving}
             onClick={() => onStatusChange(incident.id, status)}
           >
             {status}
@@ -396,7 +453,7 @@ const IncidentDetailPanel = ({ incident, onStatusChange }) => {
 const DetailItem = ({ label, value }) => (
   <Box className="incident-detail-item">
     <span>{label}</span>
-    <strong>{value}</strong>
+    <strong>{value ?? "Unavailable"}</strong>
   </Box>
 );
 

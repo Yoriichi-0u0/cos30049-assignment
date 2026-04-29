@@ -39,6 +39,8 @@ dist/
 build/
 .vite/
 .cache/
+.expo/
+.expo-shared/
 
 
 # =========================================================
@@ -79,18 +81,29 @@ __pycache__/
 # AI datasets, models, and generated outputs
 # =========================================================
 datasets/
+datasets
 Datasets/
+Datasets
 models/
+models
 Models/
+Models
 artifacts/
+artifacts
 Artifacts/
+Artifacts
 outputs/
+outputs
 Outputs/
+Outputs
 
 
 # Trained model files
 *.pt
 *.pth
+*.task
+*.tflite
+*.pb
 *.h5
 *.keras
 *.onnx
@@ -107,6 +120,7 @@ captures/
 Captures/
 screenshots/
 Screenshots/
+user_login/server/data/*.runtime.json
 
 
 # =========================================================

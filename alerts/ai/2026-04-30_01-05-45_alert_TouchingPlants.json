@@ -1,26 +1,26 @@
 {
-  "id": "AI-2026-04-28_21-11-58-alert-TouchingPlants",
+  "id": "AI-2026-04-30_01-05-45-alert-TouchingPlants",
   "source": "AI_CAMERA",
   "eventType": "TouchingPlants",
   "severity": "medium",
-  "timestamp": "2026-04-28T21:11:58+08:00",
+  "timestamp": "2026-04-30T01:05:45+08:00",
   "location": "Demo Camera Zone",
   "status": "New",
-  "evidenceImage": "/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai/2026-04-28_21-11-58_alert_TouchingPlants.jpg",
-  "evidenceJson": "/Users/chiayuenkai/Desktop/GitHub/cos30049-assignment/alerts/ai/2026-04-28_21-11-58_alert_TouchingPlants.json",
+  "evidenceImage": "/Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/ai/2026-04-30_01-05-45_alert_TouchingPlants.jpg",
+  "evidenceJson": "/Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/ai/2026-04-30_01-05-45_alert_TouchingPlants.json",
   "ai": {
     "predictedClass": "TouchingPlants",
-    "confidence": 0.8238890767097473,
-    "margin": 0.6477781534194946,
+    "confidence": 0.8104605078697205,
+    "margin": 0.620920941233635,
     "bbox": [
-      469,
-      398,
-      715,
-      630
+      428,
+      539,
+      1051,
+      876
     ],
     "probabilities": {
-      "TouchingPlants": 0.8238890767097473,
-      "TouchingWildlife": 0.17611092329025269
+      "TouchingPlants": 0.8104605078697205,
+      "TouchingWildlife": 0.1895395666360855
     }
   },
   "iot": null,
@@ -41,18 +41,18 @@
   "detections": [
     {
       "bbox": [
-        469,
-        398,
-        715,
-        630
+        428,
+        539,
+        1051,
+        876
       ],
       "pred_class": "TouchingPlants",
       "display_class": "TouchingPlants",
-      "top1": 0.8238890767097473,
-      "margin": 0.6477781534194946,
+      "top1": 0.8104605078697205,
+      "margin": 0.620920941233635,
       "probs": {
-        "TouchingPlants": 0.8238890767097473,
-        "TouchingWildlife": 0.17611092329025269
+        "TouchingPlants": 0.8104605078697205,
+        "TouchingWildlife": 0.1895395666360855
       }
     }
   ],

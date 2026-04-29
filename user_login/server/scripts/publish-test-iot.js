@@ -2,6 +2,7 @@ import mqtt from 'mqtt'
 
 const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:1883'
 const topic = process.env.MQTT_TOPIC || 'ctip/sensor/plant-zone-01/proximity'
+const apiUrl = process.env.IOT_TEST_API_URL || 'http://localhost:4000/api/incidents'
 
 const payload = {
   source: 'IOT_SENSOR',
@@ -10,9 +11,13 @@ const payload = {
   location: 'Plant Zone 01',
   distance_cm: 14.6,
   threshold_cm: 20,
+  topic,
   status: 'triggered',
   severity: 'low',
 }
+
+let finished = false
+let timeout
 
 const client = mqtt.connect(brokerUrl, {
   clientId: `ctip-test-publisher-${process.pid}-${Math.random().toString(16).slice(2)}`,
@@ -21,14 +26,44 @@ const client = mqtt.connect(brokerUrl, {
 })
 
 const finish = (exitCode) => {
+  if (finished) return
+  finished = true
   client.end(true, () => {
     process.exit(exitCode)
   })
 }
 
-const timeout = setTimeout(() => {
-  console.error(`[mqtt-test] Timed out connecting to ${brokerUrl}`)
-  finish(1)
+const fallbackToApi = async (reason) => {
+  if (finished) return
+  finished = true
+  clearTimeout(timeout)
+
+  client.end(true, async () => {
+    try {
+      console.warn(`[mqtt-test] MQTT unavailable (${reason}). Falling back to POST ${apiUrl}`)
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`)
+      }
+
+      const body = await response.json()
+      console.log(`[mqtt-test] Simulated IoT incident via API: ${body.incident?.id || 'created'}`)
+      console.log(JSON.stringify(payload))
+      process.exit(0)
+    } catch (error) {
+      console.error(`[mqtt-test] Fallback API simulation failed: ${error.message}`)
+      process.exit(1)
+    }
+  })
+}
+
+timeout = setTimeout(() => {
+  fallbackToApi(`timed out connecting to ${brokerUrl}`)
 }, 8000)
 
 client.on('connect', () => {
@@ -48,7 +83,5 @@ client.on('connect', () => {
 })
 
 client.on('error', (error) => {
-  clearTimeout(timeout)
-  console.error(`[mqtt-test] ${error.message}`)
-  finish(1)
+  fallbackToApi(error.message)
 })
