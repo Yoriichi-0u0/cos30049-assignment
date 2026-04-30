@@ -43,6 +43,51 @@ Visual identity check:
 
 - Confirm the shared Citrus logo appears on the Review Hub, User Portal sidebar, Admin sidebar, Park Ranger route through the Admin shell, and Mobile preview header.
 - Keep the original generated logo source out of the app runtime; use the optimized WebP/PNG copies already placed in each app.
+- Use `/admin/ranger` for the Park Ranger screenshot so the route includes the Admin shell/sidebar and shared logo.
+- For the cybersecurity tutor check, also open `CYBERSECURITY_REVIEW.md` and show that the route access is demo-open while API-level token/role controls can be enabled.
+
+## Cybersecurity Tutor Mode
+
+Generate local demo tokens:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app1/user_login/server
+npm run generate:tokens
+```
+
+Start the full app with optional security controls. Use the generated values locally only:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app1
+DEVICE_TOKEN_AUTH_ENABLED=true \
+ROLE_CHECK_ENABLED=true \
+AI_CAMERA_TOKEN="<copy-generated-ai-token>" \
+IOT_SENSOR_TOKEN="<copy-generated-iot-token>" \
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/ai" \
+npm run dev
+```
+
+Run the automated security smoke test in another terminal:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app1/user_login/server
+DEVICE_TOKEN_AUTH_ENABLED=true \
+ROLE_CHECK_ENABLED=true \
+AI_CAMERA_TOKEN="<copy-generated-ai-token>" \
+IOT_SENSOR_TOKEN="<copy-generated-iot-token>" \
+npm run security:smoke
+```
+
+Expected evidence:
+
+- `/api/health` returns security-control state.
+- Invalid incident source is rejected.
+- Invalid status is rejected.
+- `/api/incidents` does not expose `/Users/...`.
+- Wrong AI/IoT tokens return `401`.
+- Correct AI/IoT tokens return `201`.
+- `park_guide` status patch returns `403`.
+- `park_ranger` and `admin` status patches return `200`.
 
 ## Terminal 2: API And MySQL Checks
 
@@ -106,6 +151,16 @@ python scripts/run_ai_camera_monitor.py \
   --backend-url http://localhost:4000
 ```
 
+Run the AI camera when `DEVICE_TOKEN_AUTH_ENABLED=true`:
+
+```bash
+python scripts/run_ai_camera_monitor.py \
+  --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app1 \
+  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/ai \
+  --backend-url http://localhost:4000 \
+  --device-token "<copy-generated-ai-token>"
+```
+
 Optional normal webcam index:
 
 ```bash
@@ -140,6 +195,13 @@ Publish a test IoT proximity alert:
 ```bash
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app1/user_login/server
 npm run publish:test-iot
+```
+
+Publish a test IoT proximity alert when `DEVICE_TOKEN_AUTH_ENABLED=true`:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app1/user_login/server
+IOT_SENSOR_TOKEN="<copy-generated-iot-token>" npm run publish:test-iot
 ```
 
 The script tries the configured MQTT broker first. If the public broker times out, it falls back to posting the same simulated incident to the local backend API.
@@ -213,7 +275,8 @@ Image rule for report/demo assets:
 11. Run AI camera or IoT simulation.
 12. Refresh Admin and Ranger pages and show the same backend incident data.
 13. Patch status from the UI or curl and show persistence in API/MySQL.
-14. Capture final screenshots after confirming the Citrus Energetic theme is consistent across Hub, User, Admin, Ranger, and Mobile.
+14. For cybersecurity check, show `CYBERSECURITY_REVIEW.md`, `.env.example`, token generation, smoke test PASS output, and `/api/health` security state.
+15. Capture final screenshots after confirming the Citrus Energetic theme is consistent across Hub, User, Admin, Ranger, and Mobile.
 
 ## Screenshot Checklist
 
@@ -237,6 +300,9 @@ Capture:
 15. /api/incidents/summary.
 16. alerts/ai folder with JPG/JSON evidence.
 17. MySQL query showing monitoring incidents if MySQL mode is used.
+18. CYBERSECURITY_REVIEW.md vulnerability table.
+19. Security smoke test output.
+20. /api/health with security settings.
 ```
 
 ## Verification Commands
@@ -248,6 +314,10 @@ npm --prefix user_page run build
 npm --prefix admin_page run build
 node --check user_login/server/index.js
 node --check scripts/dev-all.mjs
+node --check scripts/hub-server.mjs
+node --check user_login/server/scripts/publish-test-iot.js
+node --check user_login/server/scripts/security-smoke-test.js
+node --check user_login/server/scripts/generate-demo-tokens.js
 source .venv/bin/activate
 python -m py_compile scripts/run_ai_camera_monitor.py
 ```

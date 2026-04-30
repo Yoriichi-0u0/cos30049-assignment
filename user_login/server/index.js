@@ -12,6 +12,9 @@ import { createMemoryIncidentStore } from './src/incident/memoryIncidentStore.js
 import { createMysqlIncidentStore } from './src/incident/mysqlIncidentStore.js'
 import {
   DEFAULT_MQTT_TOPIC,
+  VALID_EVENT_TYPES,
+  VALID_SEVERITIES,
+  VALID_SOURCES,
   VALID_STATUSES,
 } from './src/incident/incidentUtils.js'
 
@@ -39,6 +42,13 @@ const MQTT_ENABLED = process.env.MQTT_ENABLED !== 'false'
 const INCIDENT_STORAGE = (process.env.INCIDENT_STORAGE || 'memory').toLowerCase()
 const INCIDENT_MYSQL_FALLBACK = (process.env.INCIDENT_MYSQL_FALLBACK || 'memory').toLowerCase()
 const MAX_RUNTIME_INCIDENTS = 250
+
+const flagEnabled = (value) => ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase())
+const DEVICE_TOKEN_AUTH_ENABLED = flagEnabled(process.env.DEVICE_TOKEN_AUTH_ENABLED)
+const ROLE_CHECK_ENABLED = flagEnabled(process.env.ROLE_CHECK_ENABLED)
+const AI_CAMERA_TOKEN = process.env.AI_CAMERA_TOKEN || ''
+const IOT_SENSOR_TOKEN = process.env.IOT_SENSOR_TOKEN || ''
+const ALLOWED_STATUS_ACTOR_ROLES = new Set(['admin', 'park_ranger'])
 
 const mqttState = {
   enabled: MQTT_ENABLED,
@@ -84,6 +94,122 @@ const incidentStorageInfo = () => ({
 })
 
 const errorMessage = (error) => error?.message || error?.code || String(error)
+
+const securityControlInfo = () => ({
+  deviceTokenAuthEnabled: DEVICE_TOKEN_AUTH_ENABLED,
+  roleCheckEnabled: ROLE_CHECK_ENABLED,
+  tokenSources: DEVICE_TOKEN_AUTH_ENABLED ? ['AI_CAMERA', 'IOT_SENSOR'] : [],
+  statusUpdateRoles: ROLE_CHECK_ENABLED ? ['admin', 'park_ranger'] : ['demo-open'],
+})
+
+const safeTokenEqual = (provided, expected) => {
+  if (!provided || !expected) return false
+  const providedBuffer = Buffer.from(String(provided))
+  const expectedBuffer = Buffer.from(String(expected))
+  if (providedBuffer.length !== expectedBuffer.length) return false
+  return crypto.timingSafeEqual(providedBuffer, expectedBuffer)
+}
+
+const tokenForSource = (source) => {
+  if (source === 'AI_CAMERA') return AI_CAMERA_TOKEN
+  if (source === 'IOT_SENSOR') return IOT_SENSOR_TOKEN
+  return ''
+}
+
+const deviceTokenFromPayload = (payload = {}) =>
+  payload.device_token || payload.deviceToken || payload.iot?.device_token || payload.iot?.deviceToken || ''
+
+const validateDeviceToken = ({ source, headerToken = '', payload = {} }) => {
+  if (!DEVICE_TOKEN_AUTH_ENABLED) return null
+
+  const expectedToken = tokenForSource(source)
+  const providedToken = source === 'IOT_SENSOR'
+    ? headerToken || deviceTokenFromPayload(payload)
+    : headerToken
+
+  if (!safeTokenEqual(providedToken, expectedToken)) {
+    return {
+      status: 401,
+      message: `${source} requires a valid X-Device-Token when DEVICE_TOKEN_AUTH_ENABLED=true.`,
+    }
+  }
+
+  return null
+}
+
+const eventTypeFromPayload = (payload = {}, source) =>
+  payload.eventType ||
+  payload.event_type ||
+  (source === 'IOT_SENSOR' ? 'ObjectCloseToPlant' : payload.ai?.predictedClass || payload.ai?.predicted_class)
+
+const validateIncidentInput = (payload = {}) => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return { valid: false, message: 'Incident payload must be a JSON object.' }
+  }
+
+  const source = payload.source
+  if (!VALID_SOURCES.has(source)) {
+    return { valid: false, message: 'Invalid incident source. Use AI_CAMERA or IOT_SENSOR.' }
+  }
+
+  const eventType = eventTypeFromPayload(payload, source)
+  if (!VALID_EVENT_TYPES.has(eventType)) {
+    return { valid: false, message: 'Invalid event type. Use TouchingPlants, TouchingWildlife, or ObjectCloseToPlant.' }
+  }
+
+  const severity = typeof payload.severity === 'string' ? payload.severity.toLowerCase() : null
+  if (payload.severity !== undefined && !VALID_SEVERITIES.has(severity)) {
+    return { valid: false, message: 'Invalid severity. Use low, medium, or high.' }
+  }
+
+  const status = payload.status
+  const isTriggeredSensorStatus = source === 'IOT_SENSOR' && status === 'triggered'
+  if (status !== undefined && !VALID_STATUSES.has(status) && !isTriggeredSensorStatus) {
+    return {
+      valid: false,
+      message: 'Invalid status. Use New, Reviewed, Acknowledged, In Review, Resolved, False Alarm, or IoT status triggered.',
+    }
+  }
+
+  if (source === 'IOT_SENSOR') {
+    const sensorId = payload.sensor_id || payload.sensorId || payload.iot?.sensor_id || payload.iot?.sensorId
+    if (sensorId !== undefined && (typeof sensorId !== 'string' || sensorId.trim().length === 0)) {
+      return { valid: false, message: 'Invalid sensor_id. Use a non-empty string.' }
+    }
+
+    const distance = payload.distance_cm ?? payload.distanceCm ?? payload.iot?.distance_cm ?? payload.iot?.distanceCm
+    const threshold = payload.threshold_cm ?? payload.thresholdCm ?? payload.iot?.threshold_cm ?? payload.iot?.thresholdCm
+    if (distance !== undefined && (!Number.isFinite(Number(distance)) || Number(distance) < 0)) {
+      return { valid: false, message: 'Invalid distance_cm. Use a non-negative number.' }
+    }
+    if (threshold !== undefined && (!Number.isFinite(Number(threshold)) || Number(threshold) < 0)) {
+      return { valid: false, message: 'Invalid threshold_cm. Use a non-negative number.' }
+    }
+  }
+
+  return { valid: true, source, eventType }
+}
+
+const statusActorFromRequest = (req) => {
+  if (!ROLE_CHECK_ENABLED) {
+    return { allowed: true, actorRole: 'api', actorLabel: 'Incident API' }
+  }
+
+  const actorRole = String(req.get('X-Actor-Role') || '').toLowerCase()
+  if (!ALLOWED_STATUS_ACTOR_ROLES.has(actorRole)) {
+    return {
+      allowed: false,
+      status: 403,
+      message: 'Status updates require X-Actor-Role admin or park_ranger when ROLE_CHECK_ENABLED=true.',
+    }
+  }
+
+  return {
+    allowed: true,
+    actorRole,
+    actorLabel: actorRole === 'admin' ? 'Admin incident dashboard' : 'Park Ranger alert console',
+  }
+}
 
 const initializeIncidentStore = async () => {
   await memoryIncidentStore.init()
@@ -159,6 +285,7 @@ app.get('/api/health', async (req, res) => {
       route: '/evidence/ai',
       storage: 'repo-local-alerts-ai',
     },
+    security: securityControlInfo(),
     database: {
       status: 'not_required_for_live_incidents',
     },
@@ -207,6 +334,20 @@ app.get('/api/incidents/summary', async (req, res) => {
 
 app.post('/api/incidents', async (req, res) => {
   try {
+    const validation = validateIncidentInput(req.body)
+    if (!validation.valid) {
+      return res.status(400).json({ message: validation.message })
+    }
+
+    const tokenError = validateDeviceToken({
+      source: validation.source,
+      headerToken: req.get('X-Device-Token'),
+      payload: req.body,
+    })
+    if (tokenError) {
+      return res.status(tokenError.status).json({ message: tokenError.message })
+    }
+
     const incident = await runIncidentStoreOperation((store) => store.addIncident(req.body))
     console.log(`[incidents] Created ${incident.id} (${incident.source} / ${incident.eventType})`)
     res.status(201).json({ incident })
@@ -223,10 +364,15 @@ app.patch('/api/incidents/:id/status', async (req, res) => {
     })
   }
 
+  const actor = statusActorFromRequest(req)
+  if (!actor.allowed) {
+    return res.status(actor.status).json({ message: actor.message })
+  }
+
   try {
     const incident = await runIncidentStoreOperation((store) => store.updateIncidentStatus(req.params.id, status, {
-      actorRole: 'api',
-      actorLabel: 'Incident API',
+      actorRole: actor.actorRole,
+      actorLabel: actor.actorLabel,
     }))
 
     if (!incident) {
@@ -433,12 +579,26 @@ const startMqttBridge = () => {
     client.on('message', async (topic, message) => {
       try {
         const payload = JSON.parse(message.toString())
+        const normalizedPayload = {
+          ...payload,
+          source: 'IOT_SENSOR',
+          eventType: payload.eventType || payload.event_type || 'ObjectCloseToPlant',
+        }
+        const validation = validateIncidentInput(normalizedPayload)
+        if (!validation.valid) {
+          throw new Error(validation.message)
+        }
+
+        const tokenError = validateDeviceToken({
+          source: 'IOT_SENSOR',
+          payload: normalizedPayload,
+        })
+        if (tokenError) {
+          throw new Error(tokenError.message)
+        }
+
         const incident = await runIncidentStoreOperation((store) => store.addIncident(
-          {
-            ...payload,
-            source: 'IOT_SENSOR',
-            eventType: payload.eventType || payload.event_type || 'ObjectCloseToPlant',
-          },
+          normalizedPayload,
           { source: 'IOT_SENSOR', topic }
         ))
         mqttState.lastMessageAt = new Date().toISOString()

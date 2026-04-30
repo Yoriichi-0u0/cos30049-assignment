@@ -1,8 +1,12 @@
 import mqtt from 'mqtt'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:1883'
 const topic = process.env.MQTT_TOPIC || 'ctip/sensor/plant-zone-01/proximity'
 const apiUrl = process.env.IOT_TEST_API_URL || 'http://localhost:4000/api/incidents'
+const deviceToken = process.env.IOT_SENSOR_TOKEN || ''
 
 const payload = {
   source: 'IOT_SENSOR',
@@ -14,6 +18,10 @@ const payload = {
   topic,
   status: 'triggered',
   severity: 'low',
+}
+
+if (deviceToken) {
+  payload.device_token = deviceToken
 }
 
 let finished = false
@@ -43,7 +51,10 @@ const fallbackToApi = async (reason) => {
       console.warn(`[mqtt-test] MQTT unavailable (${reason}). Falling back to POST ${apiUrl}`)
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(deviceToken ? { 'X-Device-Token': deviceToken } : {}),
+        },
         body: JSON.stringify(payload),
       })
 

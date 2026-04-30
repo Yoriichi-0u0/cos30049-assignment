@@ -16,6 +16,7 @@ const Sidebar = () => {
     { id: "students", label: "Students", icon: "👥", to: "/admin/students" },
     { id: "badge", label: "Badge", icon: "📜", to: "/admin/badge" },
     { id: "detection", label: "Incidents", icon: "⚠️", to: "/admin/detection" },
+    { id: "ranger", label: "Ranger", icon: "🛡️", to: "/admin/ranger" },
   ];
 
   return (
@@ -69,7 +70,7 @@ const Sidebar = () => {
               component="img"
               className="admin-sidebar-logo"
               src={logoSrc}
-              alt="SFC demo logo"
+              alt="SFC Digital Guide logo"
             />
           </Box>
 

@@ -67,20 +67,21 @@ my-react-app1/
 
 ## Project Scope Audit
 
-| Requirement | Status | Notes |
+| Component | Classification | Notes |
 | --- | --- | --- |
-| User/Park Guide portal | Done / Demo-ready | Dashboard, module catalog, module detail, quiz, progress, certificates, notifications, schedule, resources, profile, help, and User01/User02/User03 switcher. |
-| Mobile app preview | Partially done / Demo-ready | Expo web preview exists for mobile-facing evidence. Some mobile screens are simpler than the web portal. |
-| Admin dashboard | Done / Demo-ready | Admin app remains available at `/admin`. Incident dashboard is separate at `/admin/detection`. |
-| Login/Register/Forgot Password | Partially done / Demo-ready | Demo flow exists for presentation. It is not production authentication. |
-| Admin Incident Detection | Done / Demo-ready | Shows AI_CAMERA and IOT_SENSOR incidents, summary cards, filters, table, selected detail panel, AI evidence, AI metadata, IoT metadata, fallback/live states, and status updates. |
-| Park Ranger Alert Console | Done / Demo-ready | Response-only view with urgent/new incidents, evidence, metadata, field notes, and Acknowledged/In Review/Resolved/False Alarm actions. |
-| Backend API health | Done / Demo-ready | `/api/health` reports storage status and degraded fallback when needed. |
-| AI camera monitor | Done / Demo-ready | Supports `--project-dir`, `--evidence-dir`, `--camera-index`, `--backend-url`, JPG/JSON evidence, backend POST, and safe shutdown. |
-| IoT MQTT simulation | Done / Demo-ready | `npm run publish:test-iot` publishes ObjectCloseToPlant style payloads to `ctip/sensor/plant-zone-01/proximity`. |
-| MySQL incident persistence | Done / Demo-ready | Optional `INCIDENT_STORAGE=mysql` mode uses `cos30049_assignment` and monitoring tables. Memory mode remains default. |
-| Cybersecurity and data protection | Partially done / Demo-ready notes | `.env.example`, ignored real env files, browser-safe evidence URLs, source/status validation, role boundaries, and production hardening notes are documented. |
-| Evidence/report screenshots | Done / Demo-ready | README and WORKFLOW include screenshot checklist and exact URLs/commands. |
+| Review Hub | Demo-ready | Links all demo surfaces, API endpoints, role notes, and optional security-control notes. |
+| Login/Register/Forgot Password | Partial / Demo-ready | Demo role accounts and localStorage demo session are visible. Backend auth endpoints hash passwords if the legacy MySQL auth schema is loaded. Production route/session auth is deferred. |
+| Park Guide/User Portal | Demo-ready | Dashboard, module catalog, module detail, quiz, progress, certificates, notifications, schedule, resources, profile, help, User01/User02/User03 switcher, and visible Park Guide boundaries. |
+| Mobile Preview | Partial / Demo-ready | Expo web preview exists for mobile-facing evidence. Screens are simpler than the full web portal. |
+| Admin Dashboard | Demo-ready | Admin command-center overview remains available at `/admin`. |
+| Admin Incident Detection | Demo-ready | Shows AI_CAMERA and IOT_SENSOR incidents, summary cards, filters, table, selected detail panel, AI evidence, AI metadata, IoT metadata, fallback/live states, and status updates. Sends admin role header for optional role-check mode. |
+| Park Ranger Console | Demo-ready | Response-only view with urgent/new incidents, evidence, metadata, field notes, and Acknowledged/In Review/Resolved/False Alarm actions. Sends park_ranger role header for optional role-check mode. |
+| Backend API | Demo-ready | `/api/health`, `/api/incidents`, `/api/incidents/summary`, `POST /api/incidents`, and `PATCH /api/incidents/:id/status` support memory/MySQL stores, validation, optional tokens, and optional role checks. |
+| AI camera script | Demo-ready | Supports `--project-dir`, `--evidence-dir`, `--camera-index`, `--backend-url`, `--device-token`, JPG/JSON evidence, backend POST, and safe shutdown. |
+| IoT simulation / physical sensor support | Partial / Demo-ready | `npm run publish:test-iot` publishes ObjectCloseToPlant payloads to `ctip/sensor/plant-zone-01/proximity` and supports token mode. Physical sensor deployment is environment-dependent. |
+| MySQL incident persistence | Demo-ready | Optional `INCIDENT_STORAGE=mysql` mode uses `cos30049_assignment` and monitoring tables for AI/IoT incidents only. Memory mode remains available. |
+| Cybersecurity controls | Partial / Demo-ready | `CYBERSECURITY_REVIEW.md`, `.env.example`, browser-safe evidence URLs, payload validation, optional device tokens, optional role checks, demo auth notes, smoke test script, and production hardening recommendations are available. |
+| Evidence/screenshot readiness | Demo-ready | README, WORKFLOW, and CYBERSECURITY_REVIEW include screenshot checklists and exact URLs/commands. |
 
 ## Monitoring Incident Contract
 
@@ -122,8 +123,11 @@ Absolute local paths such as `/Users/...` should not be returned to the frontend
 
 - Real `.env` files must remain local.
 - Database credentials are loaded from environment variables, not hardcoded source.
-- The backend validates allowed incident source and status values.
+- The backend validates allowed incident source, event type, severity, status, and basic IoT fields.
+- AI camera and IoT ingestion can require device tokens with `DEVICE_TOKEN_AUTH_ENABLED=true`.
+- Incident status changes can require Admin or Park Ranger role headers with `ROLE_CHECK_ENABLED=true`.
 - Admin, Park Ranger, and Park Guide role boundaries are clearly shown in the demo.
+- Frontend route guards are intentionally not enforced in production style; this remains documented as a limitation for the tutor check.
 - Production MQTT should use a private broker with authentication and TLS.
 - Production AI camera and IoT ingestion should require HTTPS and device tokens.
 - SSDLC/vulnerability assessment evidence can reference this notes file, `.env.example`, validation code, role-boundary screenshots, and API health/error behavior.
@@ -138,5 +142,7 @@ Absolute local paths such as `/Users/...` should not be returned to the frontend
 - Updated documentation for memory mode, MySQL mode, AI camera runtime, IoT simulation, cybersecurity notes, and final screenshot evidence.
 - Completed a Citrus Energetic UI consistency pass across the hub, Admin dashboard, Admin Incident Detection, Park Ranger Console, User Portal, and Mobile preview.
 - Generated and applied a shared Citrus logo mark across the hub, login surfaces, User Portal, Admin sidebar, Park Ranger route through the Admin shell, and Mobile preview. Optimized copies are 17 KB WebP for browser UI and 80 KB PNG for favicon/mobile usage.
+- Fixed the Park Ranger route to render through the Admin shell/sidebar, keeping logo placement and navigation consistent for final demo screenshots.
 - Added one generated Sarawak rainforest hero image at `images/citrus-rainforest-hero.webp` and optimized it to 136 KB for the hub background.
 - Optimized frontend training images into WebP files under `user_page/public/training/`; each optimized training image is below 100 KB and the large unused PNG originals were removed from the public frontend folder.
+- Added demo-safe cybersecurity controls for the tutor check: optional AI/IoT device tokens, optional Admin/Park Ranger status-update role checks, generated token helper, security smoke test script, and `CYBERSECURITY_REVIEW.md`.

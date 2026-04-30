@@ -184,7 +184,10 @@ const ParkRangerConsole = () => {
         `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/status`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Actor-Role": "park_ranger",
+          },
           body: JSON.stringify({ status }),
         }
       );

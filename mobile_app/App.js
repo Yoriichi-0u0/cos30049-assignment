@@ -451,7 +451,7 @@ const ProfileView = ({ profile, t }) => {
         >
           <Text style={{ color: palette.text, fontWeight: '900' }}>☰</Text>
         </Pressable>
-        <Image source={brandLogo} style={styles.headerLogo} />
+        <Image source={brandLogo} style={styles.headerLogo} accessibilityLabel="SFC Digital Guide logo" />
         <Text style={[styles.headerTitle, { color: palette.text }]}>{t.portalTitle}</Text>
       </View>
     </View>
@@ -479,7 +479,7 @@ const ProfileView = ({ profile, t }) => {
           <View style={styles.stackGap}>
           <View style={[styles.hero, { backgroundColor: palette.primaryDark, borderColor: palette.border }]}>
               <View style={styles.heroBrandRow}>
-                <Image source={brandLogo} style={styles.heroLogo} />
+                <Image source={brandLogo} style={styles.heroLogo} accessibilityLabel="SFC Digital Guide logo" />
                 <Text style={[styles.h1, { color: '#fff' }]}>{t.portalTitle}</Text>
               </View>
               <Text style={{ color: '#ffffff' }}>{t.welcomeSubtitle}</Text>
@@ -790,7 +790,7 @@ const ProfileView = ({ profile, t }) => {
             ]}
           >
             <View style={styles.sideNavBrand}>
-              <Image source={brandLogo} style={styles.sideNavLogo} />
+              <Image source={brandLogo} style={styles.sideNavLogo} accessibilityLabel="SFC Digital Guide logo" />
               <Text style={[styles.sideNavTitle, { color: '#ffffff' }]}>{t.portalTitle}</Text>
             </View>
             {navTabs.map((tab) => (

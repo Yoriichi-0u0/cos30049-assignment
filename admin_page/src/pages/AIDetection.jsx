@@ -171,7 +171,10 @@ const AIDetection = () => {
         `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/status`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Actor-Role": "admin",
+          },
           body: JSON.stringify({ status }),
         }
       );

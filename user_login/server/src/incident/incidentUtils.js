@@ -1,5 +1,11 @@
 export const VALID_SOURCES = new Set(['AI_CAMERA', 'IOT_SENSOR'])
 
+export const VALID_EVENT_TYPES = new Set([
+  'TouchingPlants',
+  'TouchingWildlife',
+  'ObjectCloseToPlant',
+])
+
 export const VALID_STATUSES = new Set([
   'New',
   'Reviewed',
@@ -134,7 +140,7 @@ export const normalizeIncident = (input = {}, options = {}) => {
     source === 'IOT_SENSOR' ? 'ObjectCloseToPlant' : aiInput?.predictedClass || aiInput?.predicted_class
   )
 
-  if (!eventType) return null
+  if (!eventType || !VALID_EVENT_TYPES.has(eventType)) return null
 
   const ai = source === 'AI_CAMERA' ? normalizeAi(aiInput) : null
   const iot = source === 'IOT_SENSOR' ? normalizeIot(input.iot || input.iotMetadata || input.iot_metadata || input, options.topic) : null
@@ -187,6 +193,14 @@ export const sanitizeIncidentPayload = (input, normalizedIncident) => {
   if (!input || typeof input !== 'object') return null
 
   const sanitized = JSON.parse(JSON.stringify(input))
+  delete sanitized.device_token
+  delete sanitized.deviceToken
+
+  if (sanitized.iot && typeof sanitized.iot === 'object') {
+    delete sanitized.iot.device_token
+    delete sanitized.iot.deviceToken
+  }
+
   if (normalizedIncident?.evidenceImage) {
     sanitized.evidenceImage = normalizedIncident.evidenceImage
     if (sanitized.evidence && typeof sanitized.evidence === 'object') {

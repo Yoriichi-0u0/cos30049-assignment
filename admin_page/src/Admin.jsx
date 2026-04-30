@@ -1,5 +1,6 @@
 import React from "react";
-import { Admin, Resource, ListGuesser, Layout, useGetList } from "react-admin";
+import { Admin, Resource, ListGuesser, Layout, useGetList, CustomRoutes } from "react-admin";
+import { Route } from "react-router-dom";
 import { Paper, Card, CardContent, Typography, Grid, Toolbar, Box, IconButton, Menu, MenuItem, Drawer, Badge, LinearProgress, Chip
 } from "@mui/material";
 import { PieChart, LineChart, Line, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
@@ -11,6 +12,7 @@ import TrainingModuleSetup from "./pages/training_module.jsx"
 import StudentManagement from "./pages/student_management.jsx";
 import BadgeManagement from "./pages/badge.jsx";
 import AIDetection from "./pages/AIDetection.jsx";
+import ParkRangerConsole from "./pages/ParkRangerConsole.jsx";
 import { seededIncidents, summarizeIncidents } from "./data/incidents.js";
 
 import { People, CheckCircle, School } from '@mui/icons-material';
@@ -489,6 +491,9 @@ function AdminPage() {
       <Resource name="students" list={StudentManagement} />
       <Resource name="badge" list={BadgeManagement} />
       <Resource name="detection" list={AIDetection} />
+      <CustomRoutes>
+        <Route path="/ranger" element={<ParkRangerConsole />} />
+      </CustomRoutes>
     </Admin>
   );
 }

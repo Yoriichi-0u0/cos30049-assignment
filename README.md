@@ -13,7 +13,7 @@ This folder is prepared as the lecturer demo copy. Do not use Git commands from 
 This project demonstrates the three Project Scope areas:
 
 1. Interactive Digital Training Platform: seeded Park Guide web portal, Expo mobile preview, training modules, quizzes, progress, badges/certificates, notifications, files/resources, profile, and role boundaries.
-2. Cybersecurity and Data Protection: demo login/register flow, role boundaries, `.env.example`, browser-safe evidence URLs, server-side incident validation, and documented production hardening steps.
+2. Cybersecurity and Data Protection: demo login/register flow, role boundaries, `.env.example`, browser-safe evidence URLs, server-side incident validation, optional device-token ingestion, optional role checks, and documented production hardening steps.
 3. AI/IoT Abnormal Activity Detection: AI camera incidents, IoT sensor incidents, Admin Incident Detection, Park Ranger response console, evidence serving, memory mode, and optional MySQL incident persistence.
 
 The Park Guide training platform remains frontend-seeded for the demo. MySQL persistence is only implemented for AI/IoT monitoring incidents.
@@ -32,7 +32,8 @@ This consistency pass updated the Review Hub, Admin dashboard, Admin Incident De
 
 Image optimization status:
 
-- Shared generated logo: `images/sfc-citrus-logo.webp`, 17 KB, with app-local copies for Hub, User, Admin, and Mobile surfaces.
+- Shared generated logo: `images/sfc-citrus-logo.webp`, 17 KB, with app-local copies for Hub, Login, User, Admin/Ranger, and Mobile surfaces.
+- Park Ranger now routes through the Admin shell, so the same optimized sidebar logo is visible on `/admin/ranger`.
 - New generated hero: `images/citrus-rainforest-hero.webp`, 136 KB.
 - User training images are now WebP files in `user_page/public/training/`.
 - Optimized training images are below 100 KB each.
@@ -191,6 +192,69 @@ ctip/sensor/plant-zone-01/proximity
 
 The expected simulated incident is `source=IOT_SENSOR`, `event_type=ObjectCloseToPlant`, `sensor_id=plant-zone-01`, `location=Plant Zone 01`, `severity=low`, and incident status `New`.
 
+## Cybersecurity Tutor Check
+
+Detailed cybersecurity evidence is in:
+
+```text
+CYBERSECURITY_REVIEW.md
+```
+
+Generate local demo tokens. These are printed only; they are not written into `.env` automatically:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app1/user_login/server
+npm run generate:tokens
+```
+
+Enable optional cybersecurity demo mode by copying generated token values into your local shell or local `.env`:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app1
+DEVICE_TOKEN_AUTH_ENABLED=true \
+ROLE_CHECK_ENABLED=true \
+AI_CAMERA_TOKEN="<copy-generated-ai-token>" \
+IOT_SENSOR_TOKEN="<copy-generated-iot-token>" \
+AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/ai" \
+npm run dev
+```
+
+Run the smoke test from another terminal with the same token values:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app1/user_login/server
+DEVICE_TOKEN_AUTH_ENABLED=true \
+ROLE_CHECK_ENABLED=true \
+AI_CAMERA_TOKEN="<copy-generated-ai-token>" \
+IOT_SENSOR_TOKEN="<copy-generated-iot-token>" \
+npm run security:smoke
+```
+
+Security controls now available for demonstration:
+
+- `DEVICE_TOKEN_AUTH_ENABLED=false` keeps the current demo ingestion flow unchanged.
+- `DEVICE_TOKEN_AUTH_ENABLED=true` requires AI camera and IoT device tokens for `POST /api/incidents`.
+- `ROLE_CHECK_ENABLED=false` keeps current status update behavior unchanged.
+- `ROLE_CHECK_ENABLED=true` allows status updates only from `X-Actor-Role: admin` or `X-Actor-Role: park_ranger`.
+- `X-Actor-Role: park_guide` is rejected from incident status changes when role checks are enabled.
+
+AI camera token mode:
+
+```bash
+python scripts/run_ai_camera_monitor.py \
+  --project-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app1 \
+  --evidence-dir /Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/ai \
+  --backend-url http://localhost:4000 \
+  --device-token "<copy-generated-ai-token>"
+```
+
+IoT token mode:
+
+```bash
+cd /Users/chiayuenkai/Desktop/GitHub/my-react-app1/user_login/server
+IOT_SENSOR_TOKEN="<copy-generated-iot-token>" npm run publish:test-iot
+```
+
 ## Demo URLs
 
 Open these after `npm run dev`:
@@ -237,6 +301,10 @@ npm --prefix user_page run build
 npm --prefix admin_page run build
 node --check user_login/server/index.js
 node --check scripts/dev-all.mjs
+node --check scripts/hub-server.mjs
+node --check user_login/server/scripts/publish-test-iot.js
+node --check user_login/server/scripts/security-smoke-test.js
+node --check user_login/server/scripts/generate-demo-tokens.js
 source .venv/bin/activate
 python -m py_compile scripts/run_ai_camera_monitor.py
 ```
@@ -246,8 +314,11 @@ python -m py_compile scripts/run_ai_camera_monitor.py
 - Real credentials belong in `.env`, not source code.
 - `.env.example` uses safe local placeholders.
 - Evidence responses use `/evidence/ai/<filename>` and do not expose `/Users/...` paths to the frontend.
-- Backend incident endpoints validate known incident source and status values.
+- Backend incident endpoints validate known incident source, event type, severity, status, and basic IoT fields.
+- Optional AI/IoT device-token validation protects incident ingestion during the cybersecurity demo.
+- Optional role checking protects incident status updates during the cybersecurity demo.
 - Role boundaries are visible: Park Guide, Park Ranger, and Admin have different permissions.
+- Login/Register/Forgot Password remains demo/partial. Existing backend auth endpoints hash passwords if the legacy MySQL auth schema is loaded, but frontend route protection is not production-grade.
 - Production MQTT should use a private broker with authentication and TLS.
 - Production camera/IoT ingestion should use HTTPS and device token authentication.
 - MySQL stores AI/IoT incident records server-side; full training-platform MySQL integration is intentionally deferred.
@@ -255,6 +326,7 @@ python -m py_compile scripts/run_ai_camera_monitor.py
 ## Known Limitations
 
 - Login/register is a demo flow, not production authentication.
+- Frontend route guards are not enforced in production style; optional role checks protect the incident status API only.
 - Park Guide training content is frontend-seeded and local to the browser.
 - The AI model depends on local model files under `artifacts/` and `models/`.
 - MQTT public broker behavior depends on network availability.
@@ -278,3 +350,6 @@ Capture:
 10. MySQL query showing monitoring incidents, if running MySQL mode.
 11. Citrus Energetic visual consistency across Hub, User, Admin, Ranger, and Mobile surfaces.
 12. Shared logo appears in the Review Hub, Park Guide portal, Admin shell, Park Ranger route through the Admin shell, and Mobile preview.
+13. `CYBERSECURITY_REVIEW.md` vulnerability assessment table.
+14. `npm run security:smoke` output with token and role checks.
+15. `/api/health` showing optional security-control state.
