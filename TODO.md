@@ -21,7 +21,7 @@ Git is available in this demo copy for the final checkpoint. Do not stage real `
 | Park Ranger Console | Demo-ready | Open `http://localhost:5174/admin/ranger`; show response-only role, urgent incidents, field notes, and action buttons. |
 | Backend API | Demo-ready | `curl http://localhost:4000/api/health`; show storage and security-control state. |
 | AI camera script | Demo-ready | Run `scripts/run_ai_camera_monitor.py` from local `.venv`; use `--device-token` when token auth is enabled; press `q` or ESC to stop safely. |
-| IoT simulation / physical sensor support | Partial / Demo-ready | Run `cd user_login/server && npm run publish:test-iot`; token mode is supported. Physical sensor behavior is environment-dependent. |
+| IoT simulation / physical sensor support | Partial / Demo-ready | Run `cd user_login/server && npm run publish:test-iot` or trigger the physical sensor while Admin Detection is open. Browser capture saves curated evidence under `alerts/iot`, serves `/evidence/iot/<filename>`, and shares the same memory/MySQL incident record with Park Ranger. |
 | MySQL incident persistence | Demo-ready | Apply migration, run `INCIDENT_STORAGE=mysql`, query `monitoring_incidents`. |
 | Cybersecurity controls | Partial / Demo-ready | Show `CYBERSECURITY_REVIEW.md`, `.env.example`, token generator, optional device tokens, optional role checks, validation behavior, and smoke test output. |
 | Evidence/screenshot readiness | Demo-ready | Use README, WORKFLOW, and CYBERSECURITY_REVIEW screenshot checklists. |
@@ -36,6 +36,7 @@ Git is available in this demo copy for the final checkpoint. Do not stage real `
 - [ ] Confirm `artifacts/clip_2class_touching_species.pt` exists locally.
 - [ ] Confirm `models/hand_landmarker.task` exists locally.
 - [ ] Confirm `alerts/ai` contains a few clean demo JPG/JSON evidence pairs.
+- [ ] Confirm `alerts/iot` exists for browser-captured IoT evidence.
 - [ ] Run `npm --prefix user_page run build`.
 - [ ] Run `npm --prefix admin_page run build`.
 - [ ] Run `node --check user_login/server/index.js`.
@@ -50,6 +51,8 @@ Git is available in this demo copy for the final checkpoint. Do not stage real `
 - [ ] Run `cd user_login/server && npm run security:smoke` with the same token values.
 - [ ] Run backend API checks in memory mode.
 - [ ] If showing persistence, create `cos30049_assignment`, apply migration, and run MySQL mode.
+- [ ] In Admin Detection, trigger IoT once and confirm the 2-second delayed 720p browser capture appears in both Admin and Park Ranger.
+- [ ] Confirm browser MQTT and backend MQTT do not duplicate the same IoT trigger; same `public_id` or same source/event/sensor within 10 seconds should merge.
 - [ ] Capture screenshots listed in README/WORKFLOW.
 - [x] Confirm the shared Citrus logo is visible in the hub, User Portal sidebar, Admin sidebar, Park Ranger page through Admin, and Mobile preview.
 - [ ] Manually review the UI surfaces for final screenshot framing after starting `npm run dev`.

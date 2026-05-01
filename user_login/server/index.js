@@ -28,13 +28,18 @@ const runtimeIncidentFile = path.join(runtimeDataDir, 'incidents.runtime.json')
 const aiEvidenceDir = process.env.AI_EVIDENCE_DIR
   ? path.resolve(process.env.AI_EVIDENCE_DIR)
   : path.join(repoRoot, 'alerts', 'ai')
+const iotEvidenceDir = process.env.IOT_EVIDENCE_DIR
+  ? path.resolve(process.env.IOT_EVIDENCE_DIR)
+  : path.join(repoRoot, 'alerts', 'iot')
 
 fs.mkdirSync(aiEvidenceDir, { recursive: true })
+fs.mkdirSync(iotEvidenceDir, { recursive: true })
 
 const app = express()
 app.use(cors())
 app.use(express.json({ limit: '2mb' }))
 app.use('/evidence/ai', express.static(aiEvidenceDir))
+app.use('/evidence/iot', express.static(iotEvidenceDir))
 
 const MQTT_TOPIC = process.env.MQTT_TOPIC || DEFAULT_MQTT_TOPIC
 const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:1883'
@@ -42,6 +47,7 @@ const MQTT_ENABLED = process.env.MQTT_ENABLED !== 'false'
 const INCIDENT_STORAGE = (process.env.INCIDENT_STORAGE || 'memory').toLowerCase()
 const INCIDENT_MYSQL_FALLBACK = (process.env.INCIDENT_MYSQL_FALLBACK || 'memory').toLowerCase()
 const MAX_RUNTIME_INCIDENTS = 250
+const MAX_IOT_CAPTURE_BYTES = 500 * 1024
 
 const flagEnabled = (value) => ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase())
 const DEVICE_TOKEN_AUTH_ENABLED = flagEnabled(process.env.DEVICE_TOKEN_AUTH_ENABLED)
@@ -119,6 +125,63 @@ const tokenForSource = (source) => {
 const deviceTokenFromPayload = (payload = {}) =>
   payload.device_token || payload.deviceToken || payload.iot?.device_token || payload.iot?.deviceToken || ''
 
+const safeFilePart = (value, fallback = 'iot-capture') =>
+  String(value || fallback)
+    .replace(/[^a-zA-Z0-9._-]/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 96) || fallback
+
+const saveIotEvidenceCapture = (payload = {}) => {
+  const capture = payload.evidenceCapture || payload.iotEvidenceCapture
+  if (!capture?.dataUrl || typeof capture.dataUrl !== 'string') return null
+
+  const match = capture.dataUrl.match(/^data:image\/jpe?g;base64,([A-Za-z0-9+/=]+)$/)
+  if (!match) {
+    throw new Error('IoT evidence capture must be a JPEG data URL.')
+  }
+
+  const buffer = Buffer.from(match[1], 'base64')
+  if (buffer.length > MAX_IOT_CAPTURE_BYTES) {
+    throw new Error(`IoT evidence capture is too large. Keep it under ${Math.round(MAX_IOT_CAPTURE_BYTES / 1024)} KB.`)
+  }
+
+  const baseName = safeFilePart(payload.incident_id || payload.public_id || payload.id)
+  const fileName = `${baseName}-${Date.now()}.jpg`
+  const filePath = path.join(iotEvidenceDir, fileName)
+  fs.writeFileSync(filePath, buffer)
+
+  return {
+    browserUrl: `/evidence/iot/${encodeURIComponent(fileName)}`,
+    fileName,
+    sizeBytes: buffer.length,
+    sha256: crypto.createHash('sha256').update(buffer).digest('hex'),
+  }
+}
+
+const withSavedIotEvidenceCapture = (payload = {}) => {
+  if (payload.source !== 'IOT_SENSOR') return payload
+
+  const savedCapture = saveIotEvidenceCapture(payload)
+  if (!savedCapture) return payload
+
+  const nextPayload = {
+    ...payload,
+    evidenceImage: savedCapture.browserUrl,
+    evidence: {
+      ...(payload.evidence || {}),
+      image_path: savedCapture.browserUrl,
+      browser_url: savedCapture.browserUrl,
+    },
+    notes:
+      payload.notes ||
+      `IoT trigger evidence saved to alerts/iot as ${savedCapture.fileName} (${savedCapture.sizeBytes} bytes).`,
+  }
+
+  delete nextPayload.evidenceCapture
+  delete nextPayload.iotEvidenceCapture
+  return nextPayload
+}
+
 const validateDeviceToken = ({ source, headerToken = '', payload = {} }) => {
   if (!DEVICE_TOKEN_AUTH_ENABLED) return null
 
@@ -141,6 +204,35 @@ const eventTypeFromPayload = (payload = {}, source) =>
   payload.eventType ||
   payload.event_type ||
   (source === 'IOT_SENSOR' ? 'ObjectCloseToPlant' : payload.ai?.predictedClass || payload.ai?.predicted_class)
+
+const numberOrNull = (value) => {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+const normalizeIotMqttPayload = (payload = {}, topic = MQTT_TOPIC) => {
+  const distance = numberOrNull(payload.distance_cm ?? payload.distanceCm ?? payload.distance)
+  const threshold = numberOrNull(payload.threshold_cm ?? payload.thresholdCm ?? payload.threshold ?? 20)
+  const status = String(payload.status || '').toLowerCase()
+  const isTriggered = status === 'triggered' || (distance !== null && threshold !== null && distance <= threshold)
+  if (!isTriggered) return null
+
+  const timestamp = payload.timestamp || payload.occurred_at || payload.occurredAt || new Date().toISOString()
+
+  return {
+    ...payload,
+    source: 'IOT_SENSOR',
+    eventType: payload.eventType || payload.event_type || 'ObjectCloseToPlant',
+    sensor_id: payload.sensor_id || payload.sensorId || 'plant-zone-01',
+    location: payload.location || 'Plant Zone 01',
+    distance_cm: distance ?? 0,
+    threshold_cm: threshold ?? 20,
+    timestamp,
+    status: 'triggered',
+    severity: payload.severity || 'low',
+    topic,
+  }
+}
 
 const validateIncidentInput = (payload = {}) => {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
@@ -282,8 +374,10 @@ app.get('/api/health', async (req, res) => {
     },
     mqtt: mqttState,
     evidence: {
-      route: '/evidence/ai',
-      storage: 'repo-local-alerts-ai',
+      aiRoute: '/evidence/ai',
+      iotRoute: '/evidence/iot',
+      aiStorage: 'repo-local-alerts-ai',
+      iotStorage: 'repo-local-alerts-iot',
     },
     security: securityControlInfo(),
     database: {
@@ -332,6 +426,35 @@ app.get('/api/incidents/summary', async (req, res) => {
   }
 })
 
+app.post('/api/incidents/iot-capture', async (req, res) => {
+  const actor = statusActorFromRequest(req)
+  if (!actor.allowed) {
+    return res.status(actor.status).json({ message: actor.message })
+  }
+
+  try {
+    const validation = validateIncidentInput({
+      ...req.body,
+      source: 'IOT_SENSOR',
+      eventType: req.body.eventType || req.body.event_type || 'ObjectCloseToPlant',
+    })
+    if (!validation.valid) {
+      return res.status(400).json({ message: validation.message })
+    }
+
+    const incidentPayload = withSavedIotEvidenceCapture({
+      ...req.body,
+      source: 'IOT_SENSOR',
+      eventType: req.body.eventType || req.body.event_type || 'ObjectCloseToPlant',
+    })
+    const incident = await runIncidentStoreOperation((store) => store.addIncident(incidentPayload))
+    console.log(`[incidents] IoT evidence saved for ${incident.id}`)
+    res.status(201).json({ incident })
+  } catch (error) {
+    res.status(400).json({ message: 'Unable to save IoT evidence capture.', error: error.message })
+  }
+})
+
 app.post('/api/incidents', async (req, res) => {
   try {
     const validation = validateIncidentInput(req.body)
@@ -348,7 +471,8 @@ app.post('/api/incidents', async (req, res) => {
       return res.status(tokenError.status).json({ message: tokenError.message })
     }
 
-    const incident = await runIncidentStoreOperation((store) => store.addIncident(req.body))
+    const incidentPayload = withSavedIotEvidenceCapture(req.body)
+    const incident = await runIncidentStoreOperation((store) => store.addIncident(incidentPayload))
     console.log(`[incidents] Created ${incident.id} (${incident.source} / ${incident.eventType})`)
     res.status(201).json({ incident })
   } catch (error) {
@@ -579,11 +703,13 @@ const startMqttBridge = () => {
     client.on('message', async (topic, message) => {
       try {
         const payload = JSON.parse(message.toString())
-        const normalizedPayload = {
-          ...payload,
-          source: 'IOT_SENSOR',
-          eventType: payload.eventType || payload.event_type || 'ObjectCloseToPlant',
+        const normalizedPayload = normalizeIotMqttPayload(payload, topic)
+        if (!normalizedPayload) {
+          mqttState.lastMessageAt = new Date().toISOString()
+          console.log(`[mqtt] Non-trigger IoT reading ignored from ${topic}`)
+          return
         }
+
         const validation = validateIncidentInput(normalizedPayload)
         if (!validation.valid) {
           throw new Error(validation.message)
@@ -629,7 +755,9 @@ const startServer = async () => {
     console.log(`Server running on http://localhost:${port}`)
     console.log(`[incidents] ${incidentStorageState.active} store loaded with ${incidentCount} incident(s)`)
     console.log(`Serving AI evidence from: ${aiEvidenceDir}`)
+    console.log(`Serving IoT evidence from: ${iotEvidenceDir}`)
     console.log('[evidence] Browser route: /evidence/ai')
+    console.log('[evidence] Browser route: /evidence/iot')
     startMqttBridge()
   })
 }

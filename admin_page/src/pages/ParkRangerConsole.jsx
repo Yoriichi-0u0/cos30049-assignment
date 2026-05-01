@@ -75,7 +75,7 @@ const resolveEvidenceImageUrl = (evidenceImage) => {
   if (evidenceImage.startsWith("http://") || evidenceImage.startsWith("https://")) {
     return evidenceImage;
   }
-  if (evidenceImage.startsWith("/evidence/ai/")) {
+  if (evidenceImage.startsWith("/evidence/ai/") || evidenceImage.startsWith("/evidence/iot/")) {
     return `${backendBaseUrl}${evidenceImage}`;
   }
   if (evidenceImage.startsWith("/incidents/") || evidenceImage.startsWith("/admin/incidents/")) {

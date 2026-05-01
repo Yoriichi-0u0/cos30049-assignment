@@ -18,7 +18,7 @@ This copy is prepared for lecturer demonstration. Do not use Git commands in thi
 - Mobile preview: `mobile_app`, Expo web, `http://localhost:8081`
 - Backend API: `user_login/server`, Express, `http://localhost:4000`
 - AI camera script: `scripts/run_ai_camera_monitor.py`
-- Evidence folder: `alerts/ai`
+- Evidence folders: `alerts/ai` for AI camera evidence and `alerts/iot` for browser-captured IoT evidence.
 - MySQL database for monitoring incidents only: `cos30049_assignment`
 
 The training platform is seeded frontend demo data. The backend and MySQL integration are scoped to AI/IoT monitoring incidents only.
@@ -40,7 +40,7 @@ Component rules:
 - Buttons use pill or rounded shapes, strong font weight, citrus gradients for primary actions, and forest/cream contrast for secondary actions.
 - Status badges use compact rounded pills with source/status-specific colors; live/healthy states should use lime/green, active review states use citrus/yellow, and risk states use warm red/orange.
 - Tables use light cream rows, readable dark text, uppercase headers, clear hover/selected states, and no low-contrast dark body rows.
-- Evidence images use rounded frames, stable aspect ratios, `object-fit: cover`, and browser-safe URLs such as `/evidence/ai/<filename>`.
+- Evidence images use rounded frames, stable aspect ratios, `object-fit: cover`, and browser-safe URLs such as `/evidence/ai/<filename>` and `/evidence/iot/<filename>`.
 - Page spacing uses dashboard-like grids, 16-28px gaps, and wide cards only where the content needs scanning.
 
 Role identity:
@@ -60,10 +60,11 @@ my-react-app1/
 ├── datasets/touching-plants/
 ├── datasets/touching-wildlife/
 ├── models/hand_landmarker.task
-└── alerts/ai/
+├── alerts/ai/
+└── alerts/iot/
 ```
 
-`.venv`, `artifacts`, `datasets`, and `models` are local-only. `alerts/ai` is intentionally retained for curated demo evidence.
+`.venv`, `artifacts`, `datasets`, and `models` are local-only. `alerts/ai` and `alerts/iot` are intentionally retained for curated demo evidence.
 
 ## Project Scope Audit
 
@@ -115,9 +116,20 @@ Frontend evidence must use browser-safe URLs such as:
 
 ```text
 /evidence/ai/example.jpg
+/evidence/iot/example.jpg
 ```
 
 Absolute local paths such as `/Users/...` should not be returned to the frontend.
+
+IoT browser capture contract:
+
+- Admin Incident Detection listens to the browser MQTT websocket on `ctip/sensor/plant-zone-01/proximity`.
+- A payload is treated as a trigger when `status=triggered` or `distance_cm <= threshold_cm`.
+- The browser opens the camera, waits for the frame, delays 2 seconds, compresses one JPEG to max 1280x720, and posts it to `POST /api/incidents/iot-capture`.
+- The backend saves the image in `alerts/iot` and returns `/evidence/iot/<filename>`.
+- The route uses `X-Actor-Role: admin` instead of exposing `IOT_SENSOR_TOKEN` in frontend code.
+- The incident is written through the active memory/MySQL store, so Admin and Park Ranger read the same incident and status from `GET /api/incidents`.
+- Deduplication first matches a stable `public_id`; otherwise IoT triggers with the same source, event type, sensor ID, and timestamp within 10 seconds are merged.
 
 ## Security Notes
 
@@ -146,3 +158,4 @@ Absolute local paths such as `/Users/...` should not be returned to the frontend
 - Added one generated Sarawak rainforest hero image at `images/citrus-rainforest-hero.webp` and optimized it to 136 KB for the hub background.
 - Optimized frontend training images into WebP files under `user_page/public/training/`; each optimized training image is below 100 KB and the large unused PNG originals were removed from the public frontend folder.
 - Added demo-safe cybersecurity controls for the tutor check: optional AI/IoT device tokens, optional Admin/Park Ranger status-update role checks, generated token helper, security smoke test script, and `CYBERSECURITY_REVIEW.md`.
+- Completed IoT browser-camera evidence integration: `/api/incidents/iot-capture` saves compressed captures to `alerts/iot`, serves `/evidence/iot/<filename>`, writes through memory/MySQL incident storage, and deduplicates browser/backend MQTT triggers.

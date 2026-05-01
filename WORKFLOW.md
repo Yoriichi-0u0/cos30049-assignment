@@ -16,6 +16,7 @@ Memory mode:
 cd /Users/chiayuenkai/Desktop/GitHub/my-react-app1
 INCIDENT_STORAGE=memory \
 AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/ai" \
+IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/iot" \
 npm run dev
 ```
 
@@ -26,6 +27,7 @@ cd /Users/chiayuenkai/Desktop/GitHub/my-react-app1
 INCIDENT_STORAGE=mysql \
 DB_DATABASE=cos30049_assignment \
 AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/ai" \
+IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/iot" \
 npm run dev
 ```
 
@@ -123,6 +125,16 @@ Check latest incidents:
 ```bash
 mysql -u root -p cos30049_assignment \
   -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 5;"
+```
+
+Check IoT metadata and evidence rows:
+
+```bash
+mysql -u root -p cos30049_assignment \
+  -e "SELECT i.public_id, m.sensor_id, m.distance_cm, m.threshold_cm, m.mqtt_topic FROM monitoring_incidents i JOIN monitoring_incident_iot_metadata m ON i.incident_id = m.incident_id ORDER BY i.occurred_at DESC LIMIT 10;"
+
+mysql -u root -p cos30049_assignment \
+  -e "SELECT i.public_id, e.file_name, e.browser_url, e.evidence_type FROM monitoring_incidents i JOIN monitoring_incident_evidence_files e ON i.incident_id = e.incident_id ORDER BY e.created_at DESC LIMIT 10;"
 ```
 
 Patch status:
@@ -227,6 +239,46 @@ curl http://localhost:4000/api/incidents
 curl http://localhost:4000/api/incidents/summary
 ```
 
+## Terminal 5: Browser IoT Evidence Capture
+
+Open both response views:
+
+```text
+http://localhost:5174/admin/detection
+http://localhost:5174/admin/ranger
+```
+
+In Admin Incident Detection:
+
+1. Click `Start Camera`, or let the IoT trigger open the preview.
+2. Click `Test Trigger`, or trigger the physical proximity sensor.
+3. Wait for the 2-second camera warmup.
+4. Confirm one compressed JPEG is captured at max 1280x720.
+5. Confirm the saved URL starts with `/evidence/iot/`.
+6. Confirm the same incident and image appear in Park Ranger.
+7. Change the status in either page and refresh the other page.
+
+Backend verification:
+
+```bash
+curl http://localhost:4000/api/incidents
+curl http://localhost:4000/api/incidents/summary
+ls -lah alerts/iot
+```
+
+The browser posts captures to `POST /api/incidents/iot-capture` with `X-Actor-Role: admin`. The frontend does not expose `IOT_SENSOR_TOKEN`; the backend writes the incident through the active memory/MySQL incident store.
+
+Duplicate handling:
+
+- If browser MQTT and backend MQTT share the same `public_id`, the backend updates the existing incident instead of creating a duplicate.
+- If there is no shared ID, IoT records with the same source, event type, sensor ID, and timestamp within 10 seconds are merged.
+- The saved browser evidence is attached to the existing incident when possible.
+
+Camera contention note:
+
+- The Admin browser preview and `scripts/run_ai_camera_monitor.py` can compete for the same physical camera.
+- Stop the browser preview before running the standalone Python AI camera on that same camera.
+
 ## Browser Tabs To Open
 
 ```text
@@ -299,10 +351,12 @@ Capture:
 14. /api/incidents.
 15. /api/incidents/summary.
 16. alerts/ai folder with JPG/JSON evidence.
-17. MySQL query showing monitoring incidents if MySQL mode is used.
-18. CYBERSECURITY_REVIEW.md vulnerability table.
-19. Security smoke test output.
-20. /api/health with security settings.
+17. alerts/iot folder with browser-captured IoT evidence.
+18. MySQL query showing monitoring incidents if MySQL mode is used.
+19. MySQL query showing IoT metadata and evidence file rows.
+20. CYBERSECURITY_REVIEW.md vulnerability table.
+21. Security smoke test output.
+22. /api/health with security settings.
 ```
 
 ## Verification Commands
@@ -356,10 +410,12 @@ If live evidence does not appear, confirm the backend and script use the same ev
 
 ```bash
 AI_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/ai"
+IOT_EVIDENCE_DIR="/Users/chiayuenkai/Desktop/GitHub/my-react-app1/alerts/iot"
 ```
 
 Frontend evidence should render through:
 
 ```text
 http://localhost:4000/evidence/ai/<filename>
+http://localhost:4000/evidence/iot/<filename>
 ```

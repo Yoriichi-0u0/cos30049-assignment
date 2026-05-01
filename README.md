@@ -49,6 +49,7 @@ Image optimization status:
 ├── datasets/touching-wildlife/
 ├── models/hand_landmarker.task
 ├── alerts/ai/
+├── alerts/iot/
 ├── scripts/run_ai_camera_monitor.py
 ├── admin_page/
 ├── user_page/
@@ -56,7 +57,7 @@ Image optimization status:
 └── user_login/
 ```
 
-Local-only folders such as `.venv/`, `artifacts/`, `datasets/`, `models/`, `node_modules/`, `dist/`, and `.expo/` should not be committed. `alerts/ai/` is intentionally available for curated demo evidence.
+Local-only folders such as `.venv/`, `artifacts/`, `datasets/`, `models/`, `node_modules/`, `dist/`, and `.expo/` should not be committed. `alerts/ai/` and `alerts/iot/` are intentionally available for curated demo evidence.
 
 ## Setup
 
@@ -131,6 +132,16 @@ mysql -u root -p cos30049_assignment \
   -e "SELECT public_id, source, event_type, status, occurred_at FROM monitoring_incidents ORDER BY occurred_at DESC LIMIT 5;"
 ```
 
+Check IoT metadata and evidence rows:
+
+```bash
+mysql -u root -p cos30049_assignment \
+  -e "SELECT i.public_id, m.sensor_id, m.distance_cm, m.threshold_cm, m.mqtt_topic FROM monitoring_incidents i JOIN monitoring_incident_iot_metadata m ON i.incident_id = m.incident_id ORDER BY i.occurred_at DESC LIMIT 10;"
+
+mysql -u root -p cos30049_assignment \
+  -e "SELECT i.public_id, e.file_name, e.browser_url, e.evidence_type FROM monitoring_incidents i JOIN monitoring_incident_evidence_files e ON i.incident_id = e.incident_id ORDER BY e.created_at DESC LIMIT 10;"
+```
+
 Only AI/IoT monitoring incidents use MySQL. Training records, guide profiles, module content, and certificate approval remain seeded frontend demo data.
 
 ## AI Camera Runtime
@@ -191,6 +202,24 @@ ctip/sensor/plant-zone-01/proximity
 ```
 
 The expected simulated incident is `source=IOT_SENSOR`, `event_type=ObjectCloseToPlant`, `sensor_id=plant-zone-01`, `location=Plant Zone 01`, `severity=low`, and incident status `New`.
+
+Admin Incident Detection can also listen to the browser MQTT websocket. A real sensor reading opens the browser camera and saves one delayed, compressed JPEG when the payload has `status=triggered` or `distance_cm <= threshold_cm`. The backend stores the image under:
+
+```text
+alerts/iot/
+```
+
+and serves it through:
+
+```text
+http://localhost:4000/evidence/iot/<filename>
+```
+
+The browser posts this capture to `POST /api/incidents/iot-capture` with `X-Actor-Role: admin`, so the frontend does not expose `IOT_SENSOR_TOKEN`. The endpoint writes through the active memory/MySQL incident store. Admin and Park Ranger both read the same record from `GET /api/incidents`, render the same `/evidence/iot/<filename>` image, and update the same status through `PATCH /api/incidents/:id/status`.
+
+Duplicate handling: if browser MQTT and backend MQTT receive the same physical sensor trigger, the backend first matches by `public_id`. If no shared ID exists, it merges IoT triggers with the same source, event type, sensor ID, and timestamp within a 10-second window. Browser capture evidence attaches to the existing incident instead of creating a duplicate.
+
+Camera note: stop the browser preview before running `scripts/run_ai_camera_monitor.py` on the same physical camera. The browser preview and Python AI camera can compete for camera access.
 
 ## Cybersecurity Tutor Check
 
@@ -313,7 +342,7 @@ python -m py_compile scripts/run_ai_camera_monitor.py
 
 - Real credentials belong in `.env`, not source code.
 - `.env.example` uses safe local placeholders.
-- Evidence responses use `/evidence/ai/<filename>` and do not expose `/Users/...` paths to the frontend.
+- Evidence responses use `/evidence/ai/<filename>` or `/evidence/iot/<filename>` and do not expose `/Users/...` paths to the frontend.
 - Backend incident endpoints validate known incident source, event type, severity, status, and basic IoT fields.
 - Optional AI/IoT device-token validation protects incident ingestion during the cybersecurity demo.
 - Optional role checking protects incident status updates during the cybersecurity demo.
@@ -331,6 +360,7 @@ python -m py_compile scripts/run_ai_camera_monitor.py
 - The AI model depends on local model files under `artifacts/` and `models/`.
 - MQTT public broker behavior depends on network availability.
 - The IoT test publisher includes a local API fallback for lecturer-demo reliability when the public MQTT broker times out.
+- Browser IoT capture uses the Admin page camera preview and should not be run at the same time as the standalone Python AI camera on the same physical camera.
 - MySQL mode requires the local `cos30049_assignment` database and migration.
 - This duplicate copy is for local demo review, not Git publishing.
 
@@ -346,7 +376,7 @@ Capture:
 6. Admin Incident Detection with AI and IoT rows, evidence image, metadata, filters, and status update.
 7. Park Ranger Console with urgent/new incidents and response actions.
 8. `/api/health`, `/api/incidents`, and `/api/incidents/summary`.
-9. `alerts/ai` folder showing JPG/JSON evidence.
+9. `alerts/ai` and `alerts/iot` folders showing curated AI and IoT evidence.
 10. MySQL query showing monitoring incidents, if running MySQL mode.
 11. Citrus Energetic visual consistency across Hub, User, Admin, Ranger, and Mobile surfaces.
 12. Shared logo appears in the Review Hub, Park Guide portal, Admin shell, Park Ranger route through the Admin shell, and Mobile preview.

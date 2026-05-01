@@ -21,7 +21,7 @@ Cybersecurity coverage is tied to the real demo components:
 - AI camera incident ingestion
 - IoT MQTT/API incident ingestion
 - MySQL incident persistence for AI/IoT monitoring incidents
-- Evidence image/JSON storage in `alerts/ai`
+- Evidence image/JSON storage in `alerts/ai` and `alerts/iot`
 - Repository hygiene for secrets and large local files
 
 The full training platform remains frontend-seeded. MySQL persistence currently covers AI/IoT monitoring incidents only.
@@ -33,7 +33,7 @@ The full training platform remains frontend-seeded. MySQL persistence currently 
 | Guide profiles | Personal and training identity data | Demo seeded frontend data; production recommendation is server-side auth and encrypted database storage. |
 | Training records and quiz results | Assessment and certification evidence | Demo local browser state; production recommendation is MySQL persistence with access control. |
 | Admin incident records | Operational monitoring data | Memory/MySQL incident store with validation and browser-safe evidence URLs. |
-| AI evidence images/JSON | Review/report/training evidence | Stored in `alerts/ai`; frontend receives `/evidence/ai/<filename>`, not `/Users/...`. |
+| AI/IoT evidence images/JSON | Review/report/training evidence | Stored in `alerts/ai` and `alerts/iot`; frontend receives `/evidence/ai/<filename>` or `/evidence/iot/<filename>`, not `/Users/...`. |
 | IoT sensor payloads | Conservation enforcement signals | Optional device token validation for API/MQTT ingestion. |
 | MySQL credentials | Database access secret | Loaded from `.env`; `.env.example` contains placeholders only. |
 | Repository | GitHub safety | `.env`, `.venv`, `node_modules`, datasets, artifacts, models, and dist files are ignored. |
@@ -44,7 +44,7 @@ The full training platform remains frontend-seeded. MySQL persistence currently 
 | --- | --- | --- | --- |
 | Unauthorized incident injection | `/api/incidents` | Fake AI or IoT event posted to backend | Optional `DEVICE_TOKEN_AUTH_ENABLED=true` requires AI/IoT tokens. |
 | Unauthorized status change | `/api/incidents/:id/status` | Park Guide marks an incident resolved | Optional `ROLE_CHECK_ENABLED=true` allows only `admin` and `park_ranger`. |
-| Data leakage | Incident API/evidence paths | Frontend receives `/Users/...` local path | Evidence paths normalized to `/evidence/ai/<filename>`. |
+| Data leakage | Incident API/evidence paths | Frontend receives `/Users/...` local path | Evidence paths normalized to `/evidence/ai/<filename>` or `/evidence/iot/<filename>`. |
 | Invalid payloads | Backend API | Unknown source/status/severity/event type | Backend validates source, event type, severity, status, and basic IoT numeric fields. |
 | Secret exposure | GitHub repo | Real `.env` committed | `.env.example` uses placeholders; real `.env` should remain local. |
 | Public MQTT spoofing | HiveMQ prototype broker | Anyone publishes to topic | Prototype limitation; optional token in payload, production private broker with TLS/auth. |
@@ -99,7 +99,7 @@ Do not commit the generated token values.
 | IoT Sensor/MQTT Ingestion | Demo-ready / Prototype | MQTT/API publisher supports `IOT_SENSOR_TOKEN`; public HiveMQ remains prototype-only. |
 | Backend API | Demo-ready | Validates incident payloads, optional token auth, optional role checks, and safe evidence URLs. |
 | MySQL Incident Database | Demo-ready | Stores monitoring incidents/actions/evidence only. Full training records are deferred. |
-| Evidence Storage | Demo-ready | Repo-local `alerts/ai`, served through `/evidence/ai`; frontend hides absolute filesystem paths. |
+| Evidence Storage | Demo-ready | Repo-local `alerts/ai` and `alerts/iot`, served through `/evidence/ai` and `/evidence/iot`; frontend hides absolute filesystem paths. |
 | GitHub Hygiene | Demo-ready | Real secrets and large local runtime/model/dependency folders should remain untracked. |
 
 ## 7. Vulnerability Assessment Table
@@ -110,7 +110,7 @@ Do not commit the generated token values.
 | Fake AI/IoT incident POST | Backend API | False alerts and noisy evidence | Optional device tokens reject missing/wrong tokens | Disabled by default for easy demo | Run `npm run security:smoke` with token auth enabled. |
 | Park Guide updates incident status | Backend API | Incorrect incident closure | Optional role check rejects `park_guide` | Disabled by default for easy demo | Smoke test shows `403` for `park_guide`. |
 | Public MQTT broker spoofing | IoT bridge | Topic can receive public messages | Optional `device_token` in payload when token mode is enabled | Public HiveMQ has no broker-level auth | Explain production private MQTT with TLS/auth. |
-| Absolute path exposure | API/frontends | Local user path leakage | Evidence normalization returns `/evidence/ai/<filename>` | Raw local evidence files still exist on demo machine | Smoke test checks no `/Users/` in `/api/incidents`. |
+| Absolute path exposure | API/frontends | Local user path leakage | Evidence normalization returns `/evidence/ai/<filename>` or `/evidence/iot/<filename>` | Raw local evidence files still exist on demo machine | Smoke test checks no `/Users/` in `/api/incidents`. |
 | Real secrets in Git | Repo | Credential leakage | `.env.example` placeholders and Git ignore rules | Manual review required before commits | Show `.env.example` and safety grep. |
 | Training data only local | User portal | Data not centrally protected | Clearly marked frontend-seeded demo | Production MySQL persistence deferred | Show Project Scope audit table. |
 | Password reset token exposure in demo | Auth endpoint | Demo endpoint returns token for local testing | Token hash stored in DB; response is demo-only | Production email delivery flow deferred | Explain limitation in tutor review. |
